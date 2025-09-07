@@ -40,6 +40,6 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     @Query("SELECT COUNT(m) FROM Member m WHERE m.status = :status")
     long countByStatus(@Param("status") MemberStatus status);
 
-    @Query("SELECT m FROM Member m WHERE m.memberships.endDate <= :expiryDate AND m.status = 'ACTIVE'")
+    @Query("SELECT DISTINCT m FROM Member m JOIN m.memberships mm WHERE mm.endDate <= :expiryDate AND m.status = 'ACTIVE'")
     List<Member> findMembersWithExpiringMemberships(@Param("expiryDate") LocalDate expiryDate);
 }

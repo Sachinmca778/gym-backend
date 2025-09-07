@@ -1,4 +1,4 @@
-package com.example.gym_crm_backend.entity;
+package com.example.gym.backend.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -90,6 +90,11 @@ public class User implements UserDetails {
     @Override
     public boolean isEnabled() {
         return isActive;
+    }
+
+    @Override
+    public String getPassword() {
+        return passwordHash;
     }
 
     public enum UserRole {

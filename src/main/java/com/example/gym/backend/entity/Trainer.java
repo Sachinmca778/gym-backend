@@ -1,6 +1,6 @@
 package com.example.gym.backend.entity;
 
-import com.example.gym_crm_backend.entity.User;
+import com.example.gym.backend.entity.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

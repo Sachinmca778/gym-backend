@@ -2,7 +2,9 @@ package com.example.gym.backend.controller;
 
 import com.example.gym.backend.dto.AuthRequestDto;
 import com.example.gym.backend.dto.AuthResponseDto;
+import com.example.gym.backend.entity.User;
 import com.example.gym.backend.service.AuthService;
+import com.example.gym.backend.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +19,14 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final UserService userService;
+
+    @PostMapping("/register")
+    public ResponseEntity<User> register(@Valid @RequestBody User user) {
+        log.info("Registration attempt for user: {}", user.getUsername());
+        User savedUser = userService.createUser(user);
+        return ResponseEntity.ok(savedUser);
+    }
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDto> login(@Valid @RequestBody AuthRequestDto request) {
