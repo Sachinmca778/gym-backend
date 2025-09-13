@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
         import java.util.List;
 
 @RestController
-@RequestMapping("/members")
+@RequestMapping("/gym/members")
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "*")
@@ -24,13 +24,20 @@ public class MemberController {
 
     private final MemberService memberService;
 
-    @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    @PostMapping("/create")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
     public ResponseEntity<MemberDto> createMember(@Valid @RequestBody MemberDto memberDto) {
         log.info("Creating new member: {}", memberDto.getFirstName() + " " + memberDto.getLastName());
         MemberDto createdMember = memberService.createMember(memberDto);
         return new ResponseEntity<>(createdMember, HttpStatus.CREATED);
     }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<MemberDto>> getAllMembers() {
+        List<MemberDto> members = memberService.getAllMembers();
+        return ResponseEntity.ok(members);
+    }
+
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")

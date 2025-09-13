@@ -27,6 +27,13 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final MemberCodeGenerator memberCodeGenerator;
 
+    public List<MemberDto> getAllMembers() {
+        List<Member> members = memberRepository.findAll();
+        return members.stream()
+                .map(this::convertToDto)
+                .toList();
+    }
+
     public MemberDto createMember(MemberDto memberDto) {
         log.info("Creating new member: {}", memberDto.getFirstName() + " " + memberDto.getLastName());
 

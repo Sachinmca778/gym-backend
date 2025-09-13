@@ -1,4 +1,4 @@
-#!/bin/bash
+nd se#!/bin/bash
 
 # Gym CRM Backend Server Startup Script
 
