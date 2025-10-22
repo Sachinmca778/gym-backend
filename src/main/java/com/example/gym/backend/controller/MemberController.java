@@ -3,6 +3,7 @@ package com.example.gym.backend.controller;
 import com.example.gym.backend.dto.MemberDto;
 import com.example.gym.backend.dto.MemberSearchDto;
 import com.example.gym.backend.service.MemberService;
+import com.example.gym.backend.service.PaymentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +14,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-        import java.util.List;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/gym/members")
@@ -23,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 public class MemberController {
 
     private final MemberService memberService;
+    private final PaymentService paymentService;
 
     @PostMapping("/create")
 //    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
@@ -36,6 +40,24 @@ public class MemberController {
     public ResponseEntity<List<MemberDto>> getAllMembers() {
         List<MemberDto> members = memberService.getAllMembers();
         return ResponseEntity.ok(members);
+    }
+
+
+    @GetMapping("/dashborad/summary")
+    public ResponseEntity<Map<String, Object>> getDashboardSummary() {
+        List<MemberDto> members = memberService.getAllMembers();
+        long totalMembers = members.size();
+        long activeMembers = memberService.getActiveMembersCount();
+        Double totalPayments = paymentService.getCurrentMonthTotalAmount();
+        if (totalPayments == null) totalPayments = 0.0;
+        List<MemberDto> expiringMembers = memberService.getMembersWithExpiringMemberships(7);
+        long expiringMembersCount = expiringMembers.size();
+        Map<String, Object> response = new HashMap<>();
+        response.put("totalMembers", totalMembers);
+        response.put("activeMembers", activeMembers);
+        response.put("totalPaymentsCurrentMonth", totalPayments);
+        response.put("expiringMembersCount", expiringMembersCount);
+        return ResponseEntity.ok(response);
     }
 
 

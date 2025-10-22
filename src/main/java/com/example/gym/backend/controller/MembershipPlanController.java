@@ -11,11 +11,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-        import java.math.BigDecimal;
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
-@RequestMapping("/membership-plans")
+@RequestMapping("/gym/membership_plans")
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "*")
@@ -23,8 +23,8 @@ public class MembershipPlanController {
 
     private final MembershipPlanService planService;
 
-    @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PostMapping("/create")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<MembershipPlanDto> createPlan(@Valid @RequestBody MembershipPlanDto planDto) {
         log.info("Creating new membership plan: {}", planDto.getName());
         MembershipPlanDto createdPlan = planService.createPlan(planDto);

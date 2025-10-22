@@ -38,7 +38,7 @@ public class MembershipPlan {
     @Positive
     private BigDecimal price;
 
-    @Column(columnDefinition = "JSON")
+    @Column(columnDefinition = "TEXT")
     private String features;
 
     @Column(name = "is_active")

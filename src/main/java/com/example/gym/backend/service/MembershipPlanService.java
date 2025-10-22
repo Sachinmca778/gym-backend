@@ -30,8 +30,16 @@ public class MembershipPlanService {
         plan.setDescription(planDto.getDescription());
         plan.setDurationMonths(planDto.getDurationMonths());
         plan.setPrice(planDto.getPrice());
-        plan.setFeatures(planDto.getFeatures());
-        plan.setActive(true);
+
+        // join features list into comma separated string
+        if (planDto.getFeatures() != null) {
+            plan.setFeatures(String.join(",", planDto.getFeatures()));
+        } else {
+            plan.setFeatures(null);
+        }
+
+        plan.setActive(planDto.isActive());
+
 
         MembershipPlan savedPlan = planRepository.save(plan);
         log.info("Membership plan created successfully with ID: {}", savedPlan.getId());
@@ -67,7 +75,13 @@ public class MembershipPlanService {
         plan.setDescription(planDto.getDescription());
         plan.setDurationMonths(planDto.getDurationMonths());
         plan.setPrice(planDto.getPrice());
-        plan.setFeatures(planDto.getFeatures());
+//        plan.setFeatures(planDto.getFeatures());
+        // join features list into comma separated string
+        if (planDto.getFeatures() != null) {
+            plan.setFeatures(String.join(",", planDto.getFeatures()));
+        } else {
+            plan.setFeatures(null);
+        }
         plan.setActive(planDto.isActive());
 
         MembershipPlan updatedPlan = planRepository.save(plan);
@@ -92,7 +106,13 @@ public class MembershipPlanService {
         dto.setDescription(plan.getDescription());
         dto.setDurationMonths(plan.getDurationMonths());
         dto.setPrice(plan.getPrice());
-        dto.setFeatures(plan.getFeatures());
+//        dto.setFeatures(plan.getFeatures());
+        // join features list into comma separated string
+        if (plan.getFeatures() != null) {
+            plan.setFeatures(String.join(",", plan.getFeatures()));
+        } else {
+            plan.setFeatures(null);
+        }
         dto.setActive(plan.isActive());
         dto.setCreatedAt(plan.getCreatedAt());
         return dto;
