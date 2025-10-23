@@ -15,7 +15,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/payments")
+@RequestMapping("/gym/payments")
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "*")
@@ -23,8 +23,8 @@ public class PaymentController {
 
     private final PaymentService paymentService;
 
-    @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    @PostMapping("/create_record")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
     public ResponseEntity<PaymentDto> recordPayment(@RequestBody PaymentDto paymentDto) {
         log.info("Recording payment for member ID: {}", paymentDto.getMemberId());
         PaymentDto payment = paymentService.recordPayment(paymentDto);

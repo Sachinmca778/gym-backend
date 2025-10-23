@@ -78,7 +78,7 @@ public class MemberController {
     }
 
     @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
     public ResponseEntity<Page<MemberDto>> searchMembers(
             @ModelAttribute MemberSearchDto searchDto,
             Pageable pageable) {
