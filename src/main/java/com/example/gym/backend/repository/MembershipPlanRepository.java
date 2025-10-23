@@ -12,7 +12,12 @@ import java.util.List;
 @Repository
 public interface MembershipPlanRepository extends JpaRepository<MembershipPlan, Long> {
 
-    List<MembershipPlan> findByIsActiveTrue();
+//    List<MembershipPlan> findByIsActiveTrue();
+
+    @Query(value = "SELECT * FROM membership_plans WHERE is_active = 1", nativeQuery = true)
+    List<MembershipPlan> findActivePlans();
+
+
 
     @Query("SELECT p FROM MembershipPlan p WHERE p.isActive = true AND p.price BETWEEN :minPrice AND :maxPrice")
     List<MembershipPlan> findActivePlansByPriceRange(@Param("minPrice") Double minPrice,

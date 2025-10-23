@@ -56,7 +56,9 @@ public class MembershipPlanService {
 
     public List<MembershipPlanDto> getAllActivePlans() {
         log.info("Fetching all active membership plans");
-        List<MembershipPlan> plans = planRepository.findByIsActiveTrue();
+//        List<MembershipPlan> plans = planRepository.findByIsActiveTrue();
+        List<MembershipPlan> plans = planRepository.findActivePlans();
+
         return plans.stream().map(this::convertToDto).collect(Collectors.toList());
     }
 

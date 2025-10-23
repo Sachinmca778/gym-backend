@@ -32,7 +32,7 @@ public class MembershipPlanController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
     public ResponseEntity<MembershipPlanDto> getPlanById(@PathVariable Long id) {
         log.info("Fetching membership plan with ID: {}", id);
         MembershipPlanDto plan = planService.getPlanById(id);
@@ -40,7 +40,7 @@ public class MembershipPlanController {
     }
 
     @GetMapping("/active")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
     public ResponseEntity<List<MembershipPlanDto>> getAllActivePlans() {
         log.info("Fetching all active membership plans");
         List<MembershipPlanDto> plans = planService.getAllActivePlans();
