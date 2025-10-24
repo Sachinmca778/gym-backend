@@ -76,6 +76,11 @@ public class PaymentService {
         return payments.stream().map(this::convertToDto).collect(Collectors.toList());
     }
 
+    public List<PaymentDto> findAllPayments() {
+        List<Payment> payments = paymentRepository.findAllPayments();
+        return payments.stream().map(this::convertToDto).collect(Collectors.toList());
+    }
+
     public BigDecimal getTotalRevenueByDate(LocalDate date) {
         return paymentRepository.getTotalRevenueByDate(date);
     }

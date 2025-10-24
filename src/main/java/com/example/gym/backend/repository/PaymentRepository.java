@@ -25,6 +25,25 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("SELECT p FROM Payment p WHERE p.dueDate <= :dueDate AND p.status = 'PENDING'")
     List<Payment> findOverduePayments(@Param("dueDate") LocalDate dueDate);
 
+    @Query(
+            value = """
+            SELECT *
+            FROM (
+                SELECT 
+                    p.*, 
+                    ROW_NUMBER() OVER (PARTITION BY p.status ORDER BY p.id DESC) AS rn
+                FROM payments p
+                WHERE p.status IN ('COMPLETED', 'FAILED', 'PENDING')
+            ) AS ranked
+            ORDER BY 
+                ranked.rn,
+                FIELD(ranked.status, 'COMPLETED', 'FAILED', 'PENDING')
+            LIMIT 10
+            """,
+            nativeQuery = true
+    )
+    List<Payment> findAllPayments();
+
     @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.status = 'COMPLETED' AND DATE(p.paymentDate) = :date")
     BigDecimal getTotalRevenueByDate(@Param("date") LocalDate date);
 
