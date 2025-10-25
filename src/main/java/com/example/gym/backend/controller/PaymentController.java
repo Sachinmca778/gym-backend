@@ -26,7 +26,7 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PostMapping("/create_record")
-//    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
     public ResponseEntity<PaymentDto> recordPayment(@RequestBody PaymentDto paymentDto) {
         log.info("Recording payment for member ID: {}", paymentDto.getMemberId());
         PaymentDto payment = paymentService.recordPayment(paymentDto);
@@ -34,6 +34,7 @@ public class PaymentController {
     }
 
     @GetMapping("/summary")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
     public ResponseEntity<Map<String, Object>> getPaymentSummary (
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         Double currentMonthAmount = paymentService.getCurrentMonthTotalAmount();
@@ -53,7 +54,7 @@ public class PaymentController {
     }
 
     @GetMapping("/all_payments")
-//    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
     public ResponseEntity<List<PaymentDto>> findAllPayments() {
         List<PaymentDto> payments = paymentService.findAllPayments();
         return ResponseEntity.ok(payments);

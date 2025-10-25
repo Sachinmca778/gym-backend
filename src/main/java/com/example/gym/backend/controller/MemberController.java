@@ -29,7 +29,7 @@ public class MemberController {
     private final PaymentService paymentService;
 
     @PostMapping("/create")
-//    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
     public ResponseEntity<MemberDto> createMember(@Valid @RequestBody MemberDto memberDto) {
         log.info("Creating new member: {}", memberDto.getFirstName() + " " + memberDto.getLastName());
         MemberDto createdMember = memberService.createMember(memberDto);
@@ -37,13 +37,14 @@ public class MemberController {
     }
 
     @GetMapping("/all")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
     public ResponseEntity<List<MemberDto>> getAllMembers() {
         List<MemberDto> members = memberService.getAllMembers();
         return ResponseEntity.ok(members);
     }
 
-
     @GetMapping("/dashborad/summary")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
     public ResponseEntity<Map<String, Object>> getDashboardSummary() {
         List<MemberDto> members = memberService.getAllMembers();
         long totalMembers = members.size();
@@ -62,7 +63,7 @@ public class MemberController {
 
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
     public ResponseEntity<MemberDto> getMemberById(@PathVariable Long id) {
         log.info("Fetching member with ID: {}", id);
         MemberDto member = memberService.getMemberById(id);
@@ -70,7 +71,7 @@ public class MemberController {
     }
 
     @GetMapping("/code/{memberCode}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
     public ResponseEntity<MemberDto> getMemberByCode(@PathVariable String memberCode) {
         log.info("Fetching member with code: {}", memberCode);
         MemberDto member = memberService.getMemberByCode(memberCode);
