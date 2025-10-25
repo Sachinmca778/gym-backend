@@ -47,7 +47,7 @@ public class User implements UserDetails {
     private UserRole role;
 
     private String phone;
-    private String profileImage;
+//    private String profileImage;
     private boolean isActive = true;
 
     @Column(name = "created_at")

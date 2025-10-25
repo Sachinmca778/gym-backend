@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/gym/auth")
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "*")
