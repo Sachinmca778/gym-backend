@@ -2,6 +2,7 @@ package com.example.gym.backend.service;
 
 import com.example.gym.backend.dto.AuthRequestDto;
 import com.example.gym.backend.dto.AuthResponseDto;
+import com.example.gym.backend.dto.MemberDto;
 import com.example.gym.backend.entity.User;
 import com.example.gym.backend.repository.UserRepository;
 import com.example.gym.backend.security.JwtUtil;
@@ -24,6 +25,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
+    private final MemberService memberService;
 
     public AuthResponseDto login(AuthRequestDto request) {
         log.info("Authenticating user: {}", request.getUsername());
@@ -36,12 +38,22 @@ public class AuthService {
         User user = userRepository.findByUsername(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        String fullName = (user.getFirstName() != null ? user.getFirstName() : "") + " " +
+                (user.getLastName() != null ? user.getLastName() : "");
+        fullName = fullName.trim();
+
+
         String accessToken = jwtUtil.generateToken(userDetails);
         String refreshToken = jwtUtil.generateRefreshToken(userDetails);
+
+        MemberDto member = memberService.getMemberByUserId(user.getId());
+        Long memberId = member.getId();
 
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", user.getId());
         claims.put("role", user.getRole().name());
+        claims.put("name", fullName);
+        claims.put("memberId",memberId);
 
         return AuthResponseDto.builder()
                 .accessToken(accessToken)
@@ -50,6 +62,8 @@ public class AuthService {
                 .expiresIn(3600L)
                 .userId(user.getId())
                 .username(user.getUsername())
+                .name(fullName)
+                .memberId(memberId)
                 .role(user.getRole().name())
                 .build();
     }

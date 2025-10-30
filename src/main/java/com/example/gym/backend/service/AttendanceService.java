@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.gym.backend.entity.Attendance.CheckInMethod;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,7 +36,7 @@ public class AttendanceService {
         Attendance attendance = new Attendance();
         attendance.setMember(member);
         attendance.setCheckIn(LocalDateTime.now());
-        attendance.setMethod(attendanceDto.getMethod());
+        attendance.setMethod(attendanceDto.getMethod() != null ? attendanceDto.getMethod() : CheckInMethod.MANUAL);
         attendance.setNotes(attendanceDto.getNotes());
 
         Attendance savedAttendance = attendanceRepository.save(attendance);

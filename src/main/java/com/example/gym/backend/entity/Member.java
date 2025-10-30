@@ -74,6 +74,9 @@ public class Member {
     @Column(name = "profile_image")
     private String profileImage;
 
+    @Column(name = "user_id")
+    private Long userId;
+
     @Enumerated(EnumType.STRING)
     private MemberStatus status = MemberStatus.ACTIVE;
 

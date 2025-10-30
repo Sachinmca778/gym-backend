@@ -4,6 +4,7 @@ package com.example.gym.backend.controller;
 
 import com.example.gym.backend.dto.AttendanceDto;
 import com.example.gym.backend.service.AttendanceService;
+import com.example.gym.backend.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -15,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/attendance")
+@RequestMapping("/gym/attendance")
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "*")
@@ -23,8 +24,8 @@ public class AttendanceController {
 
     private final AttendanceService attendanceService;
 
-    @PostMapping("/check-in/{memberId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    @PostMapping("/check_in/{memberId}")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
     public ResponseEntity<AttendanceDto> checkIn(
             @PathVariable Long memberId,
             @RequestBody AttendanceDto attendanceDto) {

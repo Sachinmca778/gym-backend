@@ -81,6 +81,12 @@ public class MemberService {
         return convertToDto(member);
     }
 
+    public MemberDto getMemberByUserId(Long userId) {
+        Member member = memberRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found with user Id " + userId));
+        return convertToDto(member);
+    }
+
     public Page<MemberDto> searchMembers(MemberSearchDto searchDto, Pageable pageable) {
         log.info("Searching members with criteria: {}", searchDto);
         Page<Member> members = memberRepository.searchMembers(searchDto.getSearchTerm(), pageable);
@@ -159,6 +165,7 @@ public class MemberService {
         dto.setJoinDate(member.getJoinDate());
         dto.setCreatedAt(member.getCreatedAt());
         dto.setUpdatedAt(member.getUpdatedAt());
+        dto.setUserId(member.getUserId());
         return dto;
     }
 }
