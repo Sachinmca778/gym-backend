@@ -32,4 +32,7 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
     @Query("SELECT COUNT(a) FROM Attendance a WHERE a.member.id = :memberId AND DATE(a.checkIn) = :date")
     long countByMemberIdAndDate(@Param("memberId") Long memberId, @Param("date") LocalDate date);
+
+    @Query("SELECT AVG(a.durationMinutes) FROM Attendance a WHERE DATE(a.checkIn) = :date")
+    Double findAvgDurationByDate(@Param("date") LocalDate date);
 }

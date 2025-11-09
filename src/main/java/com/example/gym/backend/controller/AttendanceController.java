@@ -3,6 +3,7 @@ package com.example.gym.backend.controller;
 
 
 import com.example.gym.backend.dto.AttendanceDto;
+import com.example.gym.backend.dto.MemberDto;
 import com.example.gym.backend.service.AttendanceService;
 import com.example.gym.backend.service.MemberService;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +14,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
         import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/gym/attendance")
@@ -23,6 +26,7 @@ import java.util.List;
 public class AttendanceController {
 
     private final AttendanceService attendanceService;
+    private final MemberService memberService;
 
     @PostMapping("/check_in/{memberId}")
 //    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
@@ -34,8 +38,8 @@ public class AttendanceController {
         return ResponseEntity.ok(attendance);
     }
 
-    @PostMapping("/check-out/{attendanceId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    @PostMapping("/check_out/{attendanceId}")
+//    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
     public ResponseEntity<AttendanceDto> checkOut(@PathVariable Long attendanceId) {
         log.info("Recording check-out for attendance ID: {}", attendanceId);
         AttendanceDto attendance = attendanceService.checkOut(attendanceId);
@@ -53,10 +57,14 @@ public class AttendanceController {
     }
 
     @GetMapping("/date")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
     public ResponseEntity<List<AttendanceDto>> getAttendanceByDate(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         log.info("Fetching all attendance for date: {}", date);
+
+        if (date == null) {
+            date = LocalDate.now();
+        }
         List<AttendanceDto> attendances = attendanceService.getAttendanceByDate(date);
         return ResponseEntity.ok(attendances);
     }
@@ -68,5 +76,29 @@ public class AttendanceController {
         log.info("Fetching daily attendance count for date: {}", date);
         long count = attendanceService.getDailyAttendanceCount(date);
         return ResponseEntity.ok(count);
+    }
+
+    @GetMapping("/summary")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    public ResponseEntity<Map<String, Object>> getAttendenceSummary(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+
+        if (date == null) {
+            date = LocalDate.now();
+        }
+
+        long dailyAttendanceCount = attendanceService.getDailyAttendanceCount(date);
+        Double dailyAverageDuration = attendanceService.getFindAvgDurationByDate(date);
+
+        long activeMembers = memberService.getActiveMembersCount();
+
+        long dailyAbsentMember = activeMembers - dailyAttendanceCount;
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("dailyAttendanceCount", dailyAttendanceCount);
+        response.put("activeMembers", activeMembers);
+        response.put("dailyAverageDuration", dailyAverageDuration);
+        response.put("dailyAbsentMember", dailyAbsentMember);
+        return ResponseEntity.ok(response);
     }
 }

@@ -88,6 +88,11 @@ public class AttendanceService {
         return attendanceRepository.countByMemberIdAndDate(memberId, date);
     }
 
+    public Double getFindAvgDurationByDate(LocalDate date) {
+        return attendanceRepository.findAvgDurationByDate(date);
+    }
+
+
     private AttendanceDto convertToDto(Attendance attendance) {
         AttendanceDto dto = new AttendanceDto();
         dto.setId(attendance.getId());
