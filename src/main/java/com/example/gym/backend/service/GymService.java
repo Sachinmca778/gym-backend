@@ -32,7 +32,7 @@ public class GymService {
         gym.setCity(gymDto.getCity());
         gym.setState(gymDto.getState());
         gym.setPincode(gymDto.getPincode());
-        gym.setActive(gymDto.isActive());
+        gym.setActive(true);
 
         Gym savedGym = gymRepository.save(gym);
         log.info("Gym created successfully with ID: {}", savedGym.getId());
