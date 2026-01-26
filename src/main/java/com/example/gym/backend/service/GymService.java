@@ -66,7 +66,7 @@ public class GymService {
         gym.setCity(gymDto.getCity());
         gym.setState(gymDto.getState());
         gym.setPincode(gymDto.getPincode());
-        gym.setActive(gymDto.isActive());
+        gym.setActive(true);
 
         Gym updatedGym = gymRepository.save(gym);
         log.info("Gym updated successfully with ID: {}", updatedGym.getId());
