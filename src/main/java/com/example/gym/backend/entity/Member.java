@@ -74,6 +74,10 @@ public class Member {
     @Column(name = "profile_image")
     private String profileImage;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "gym_id")
+    private Gym gym;
+
     @Column(name = "user_id")
     private Long userId;
 

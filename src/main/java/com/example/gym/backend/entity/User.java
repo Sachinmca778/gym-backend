@@ -37,6 +37,10 @@ public class User implements UserDetails {
     @NotBlank
     private String passwordHash;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "gym_id")
+    private Gym gym;
+
     @NotBlank
     private String firstName;
 
