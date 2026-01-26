@@ -27,8 +27,8 @@ public class MembershipPlanDto {
     @Positive(message = "Price must be positive")
     private BigDecimal price;
 
-//    private String features;
-    private List<String> features;
+    private String features;
+    // private List<String> features;
 
     private boolean isActive;
     private LocalDateTime createdAt;

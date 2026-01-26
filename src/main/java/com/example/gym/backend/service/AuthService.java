@@ -46,14 +46,14 @@ public class AuthService {
         String accessToken = jwtUtil.generateToken(userDetails);
         String refreshToken = jwtUtil.generateRefreshToken(userDetails);
 
-        MemberDto member = memberService.getMemberByUserId(user.getId());
-        Long memberId = member.getId();
+//        MemberDto member = memberService.getMemberByUserId(user.getId());
+//        Long memberId = member.getId();
 
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", user.getId());
         claims.put("role", user.getRole().name());
         claims.put("name", fullName);
-        claims.put("memberId",memberId);
+//        claims.put("memberId",memberId);
 
         return AuthResponseDto.builder()
                 .accessToken(accessToken)
@@ -63,7 +63,7 @@ public class AuthService {
                 .userId(user.getId())
                 .username(user.getUsername())
                 .name(fullName)
-                .memberId(memberId)
+//                .memberId(memberId)
                 .role(user.getRole().name())
                 .build();
     }
