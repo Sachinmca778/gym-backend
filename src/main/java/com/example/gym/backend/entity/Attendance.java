@@ -24,6 +24,10 @@ public class Attendance {
     @JoinColumn(name = "member_id")
     private Member member;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "gym_id")
+    private Gym gym;
+
     @NotNull
     @Column(name = "check_in")
     private LocalDateTime checkIn;

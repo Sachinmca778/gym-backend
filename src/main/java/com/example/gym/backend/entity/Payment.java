@@ -28,6 +28,10 @@ public class Payment {
     private Member member;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "gym_id")
+    private Gym gym;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "membership_id")
     private MemberMembership membership;
 

@@ -45,6 +45,14 @@ public class GymController {
         return ResponseEntity.ok(gyms);
     }
 
+    @GetMapping("/all")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
+    public ResponseEntity<List<GymDto>> getAllGyms() {
+        log.info("Fetching all gyms");
+        List<GymDto> gyms = gymService.getAllGyms();
+        return ResponseEntity.ok(gyms);
+    }
+
     @PutMapping("/{id}")
 //    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<GymDto> updateGym(

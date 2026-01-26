@@ -53,6 +53,12 @@ public class GymService {
         return gyms.stream().map(this::convertToDto).collect(Collectors.toList());
     }
 
+    public List<GymDto> getAllGyms() {
+        log.info("Fetching all gyms");
+        List<Gym> gyms = gymRepository.findAll();
+        return gyms.stream().map(this::convertToDto).collect(Collectors.toList());
+    }
+
     public GymDto updateGym(Long id, GymDto gymDto) {
         log.info("Updating gym with ID: {}", id);
         Gym gym = gymRepository.findById(id)

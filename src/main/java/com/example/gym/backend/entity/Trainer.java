@@ -27,6 +27,10 @@ public class Trainer {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "gym_id")
+    private Gym gym;
+
     @NotBlank(message = "First name is required")
     @Column(name = "first_name")
     private String firstName;

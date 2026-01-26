@@ -32,6 +32,10 @@ public class MemberMembership {
     @JoinColumn(name = "plan_id")
     private MembershipPlan plan;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "gym_id")
+    private Gym gym;
+
     @NotNull
     @Column(name = "start_date")
     private LocalDate startDate;
