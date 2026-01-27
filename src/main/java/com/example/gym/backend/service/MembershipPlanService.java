@@ -62,6 +62,12 @@ public class MembershipPlanService {
         return plans.stream().map(this::convertToDto).collect(Collectors.toList());
     }
 
+    public List<MembershipPlanDto> getAllPlans() {
+        log.info("Fetching all membership plans");
+        List<MembershipPlan> plans = planRepository.findAll();
+        return plans.stream().map(this::convertToDto).collect(Collectors.toList());
+    }
+
     public List<MembershipPlanDto> getPlansByPriceRange(BigDecimal minPrice, BigDecimal maxPrice) {
         log.info("Fetching plans with price range: {} - {}", minPrice, maxPrice);
         List<MembershipPlan> plans = planRepository.findActivePlansByPriceRange(minPrice.doubleValue(), maxPrice.doubleValue());

@@ -47,6 +47,14 @@ public class MembershipPlanController {
         return ResponseEntity.ok(plans);
     }
 
+    @GetMapping("/all")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
+    public ResponseEntity<List<MembershipPlanDto>> getAllPlans() {
+        log.info("Fetching all membership plans");
+        List<MembershipPlanDto> plans = planService.getAllPlans();
+        return ResponseEntity.ok(plans);
+    }
+
     @GetMapping("/search/price-range")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
     public ResponseEntity<List<MembershipPlanDto>> getPlansByPriceRange(
