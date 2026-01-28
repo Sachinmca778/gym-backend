@@ -6,13 +6,18 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "members")
+@Table(name = "members", 
+    uniqueConstraints = {
+        @UniqueConstraint(name = "uq_members_user", columnNames = "user_id"),
+        @UniqueConstraint(name = "uq_member_email_per_gym", columnNames = {"email", "gym_id"})
+    })
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

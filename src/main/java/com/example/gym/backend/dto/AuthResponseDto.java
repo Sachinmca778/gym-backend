@@ -20,4 +20,5 @@ public class AuthResponseDto {
     private String role;
     private String name;
     private Long memberId;
+    private Long gymId; // NULL for ADMIN, NOT NULL for other roles
 }

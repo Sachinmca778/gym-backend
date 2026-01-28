@@ -20,4 +20,11 @@ public interface MemberMembershipRepository extends JpaRepository<MemberMembersh
 
     @Query("SELECT m FROM MemberMembership m WHERE m.endDate <= :date AND m.status = 'ACTIVE'")
     List<MemberMembership> findExpiringMemberships(@Param("date") LocalDate date);
+
+    // Validation methods for unique active membership constraint
+    @Query("SELECT COUNT(m) > 0 FROM MemberMembership m WHERE m.member.id = :memberId AND m.gym.id = :gymId AND m.status = 'ACTIVE'")
+    boolean existsActiveMembershipByMemberAndGym(@Param("memberId") Long memberId, @Param("gymId") Long gymId);
+    
+    @Query("SELECT m FROM MemberMembership m WHERE m.member.id = :memberId AND m.gym.id = :gymId AND m.status = 'ACTIVE'")
+    List<MemberMembership> findActiveMembershipsByMemberAndGym(@Param("memberId") Long memberId, @Param("gymId") Long gymId);
 }

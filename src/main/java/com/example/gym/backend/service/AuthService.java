@@ -49,6 +49,12 @@ public class AuthService {
 //        MemberDto member = memberService.getMemberByUserId(user.getId());
 //        Long memberId = member.getId();
 
+        // Get gymId (null for ADMIN, not null for other roles)
+        Long gymId = null;
+        if (user.getGym() != null) {
+            gymId = user.getGym().getId();
+        }
+
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", user.getId());
         claims.put("role", user.getRole().name());
@@ -65,6 +71,7 @@ public class AuthService {
                 .name(fullName)
 //                .memberId(memberId)
                 .role(user.getRole().name())
+                .gymId(gymId) // NULL for ADMIN, NOT NULL for other roles
                 .build();
     }
 

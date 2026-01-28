@@ -43,4 +43,9 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     @Query("SELECT DISTINCT m FROM Member m JOIN m.memberships mm WHERE mm.endDate <= :expiryDate AND m.status = 'ACTIVE'")
     List<Member> findMembersWithExpiringMemberships(@Param("expiryDate") LocalDate expiryDate);
+
+    // Validation methods for unique constraints
+    boolean existsByEmailAndGymId(String email, Long gymId);
+    boolean existsByUserId(Long userId);
+    Optional<Member> findByEmailAndGymId(String email, Long gymId);
 }

@@ -29,4 +29,8 @@ public interface TrainerRepository extends JpaRepository<Trainer, Long> {
     // Find trainers by specialization (case insensitive)
     @Query("SELECT t FROM Trainer t WHERE t.isActive = true AND LOWER(t.specialization) LIKE LOWER(CONCAT('%', :specialization, '%'))")
     List<Trainer> findBySpecializationContainingIgnoreCase(@Param("specialization") String specialization);
+
+    // Validation methods for unique constraints
+    boolean existsByUserId(Long userId);
+    Optional<Trainer> findByUserId(Long userId);
 }

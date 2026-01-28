@@ -1,11 +1,14 @@
-package com.example.gym.backend.service;
+package com.example.gym.backend.service保值
 
 
 
 import com.example.gym.backend.dto.MemberDto;
 import com.example.gym.backend.dto.MemberSearchDto;
+import com.example.gym.backend.entity.Gym;
 import com.example.gym.backend.entity.Member;
 import com.example.gym.backend.exception.ResourceNotFoundException;
+import com.example.gym.backend.exception.ValidationException;
+import com.example.gym.backend.repository.GymRepository;
 import com.example.gym.backend.repository.MemberRepository;
 import com.example.gym.backend.util.MemberCodeGenerator;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +29,7 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final MemberCodeGenerator memberCodeGenerator;
+    private final GymRepository gymRepository;
 
     public List<MemberDto> getAllMembers() {
         List<Member> members = memberRepository.findAll();
@@ -36,6 +40,27 @@ public class MemberService {
 
     public MemberDto createMember(MemberDto memberDto) {
         log.info("Creating new member: {}", memberDto.getFirstName() + " " + memberDto.getLastName());
+
+        // ========== VALIDATION 1: Check email uniqueness per gym ==========
+        if (memberDto.getEmail() != null && !memberDto.getEmail().isBlank()) {
+            Long gymId = memberDto.getGymId();
+            if (gymId != null) {
+                if (memberRepository.existsByEmailAndGymId(memberDto.getEmail(), gymId)) {
+                    throw new ValidationException("Email '" + memberDto.getEmail() + "' already exists in this gym");
+                }
+            }
+        }
+
+        // ========== VALIDATION 2: Check user_id uniqueness (1-1 relationship) ==========
+        if (memberDto.getUserId() != null) {
+            if (memberRepository.existsByUserId(memberDto.getUserId())) {
+                throw new ValidationException("A member with user_id " + memberDto.getUserId() + " already exists");
+            }
+        }
+
+        // ========== VALIDATION 3: Validate gym_id exists for non-ADMIN roles ==========
+        // Note: This validation should be enforced at the controller/service level
+        // based on the logged-in user's role
 
         // Generate unique member code
         String memberCode = memberCodeGenerator.generateUniqueCode();
@@ -60,6 +85,14 @@ public class MemberService {
         member.setFitnessGoals(memberDto.getFitnessGoals());
         member.setJoinDate(LocalDate.now());
         member.setStatus(Member.MemberStatus.ACTIVE);
+        member.setUserId(memberDto.getUserId());
+
+        // Set gym if gymId is provided
+        if (memberDto.getGymId() != null) {
+            Gym gym = gymRepository.findById(memberDto.getGymId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Gym not found with ID: " + memberDto.getGymId()));
+            member.setGym(gym);
+        }
 
         Member savedMember = memberRepository.save(member);
         log.info("Member created successfully with ID: {}", savedMember.getId());
@@ -97,6 +130,18 @@ public class MemberService {
         log.info("Updating member with ID: {}", id);
         Member member = memberRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Member not found with ID: " + id));
+
+        // ========== VALIDATION: Check email uniqueness per gym (for update) ==========
+        if (memberDto.getEmail() != null && !memberDto.getEmail().isBlank()) {
+            Long gymId = memberDto.getGymId();
+            if (gymId != null) {
+                // Find existing member with same email in same gym
+                var existingMember = memberRepository.findByEmailAndGymId(memberDto.getEmail(), gymId);
+                if (existingMember.isPresent() && !existingMember.get().getId().equals(id)) {
+                    throw new ValidationException("Email '" + memberDto.getEmail() + "' already exists in this gym");
+                }
+            }
+        }
 
         member.setFirstName(memberDto.getFirstName());
         member.setLastName(memberDto.getLastName());
@@ -166,6 +211,10 @@ public class MemberService {
         dto.setCreatedAt(member.getCreatedAt());
         dto.setUpdatedAt(member.getUpdatedAt());
         dto.setUserId(member.getUserId());
+        if (member.getGym() != null) {
+            dto.setGymId(member.getGym().getId());
+        }
         return dto;
     }
 }
+

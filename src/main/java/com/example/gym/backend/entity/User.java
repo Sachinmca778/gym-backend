@@ -52,6 +52,9 @@ public class User implements UserDetails {
 
     private String phone;
 //    private String profileImage;
+    
+    @Column(name = "is_active", nullable = false)
+    @ColumnDefault("1")
     private boolean isActive = true;
 
     @Column(name = "created_at")
