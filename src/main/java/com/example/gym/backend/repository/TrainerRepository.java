@@ -6,22 +6,27 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface TrainerRepository extends JpaRepository<Trainer, Long> {
 
-    Optional<Trainer> findByEmail(String email);
+    // Find all active trainers
     List<Trainer> findByIsActiveTrue();
-    List<Trainer> findBySpecialization(String specialization);
 
-    @Query("SELECT t FROM Trainer t WHERE t.isActive = true AND t.specialization = :specialization")
+    // Find active trainers by specialization
+    @Query("SELECT t FROM Trainer t WHERE t.isActive = true AND LOWER(t.specialization) = LOWER(:specialization)")
     List<Trainer> findActiveTrainersBySpecialization(@Param("specialization") String specialization);
 
+    // Find top rated trainers
     @Query("SELECT t FROM Trainer t WHERE t.isActive = true AND t.rating >= :minRating ORDER BY t.rating DESC")
-    List<Trainer> findTopRatedTrainers(@Param("minRating") Double minRating);
+    List<Trainer> findTopRatedTrainers(@Param("minRating") BigDecimal minRating);
 
-    @Query("SELECT t FROM Trainer t WHERE t.isActive = true AND t.hourlyRate <= :maxRate")
-    List<Trainer> findTrainersByMaxRate(@Param("maxRate") Double maxRate);
+    // Find trainers by email (for uniqueness check)
+    boolean existsByEmail(String email);
+
+    // Find trainers by specialization (case insensitive)
+    @Query("SELECT t FROM Trainer t WHERE t.isActive = true AND LOWER(t.specialization) LIKE LOWER(CONCAT('%', :specialization, '%'))")
+    List<Trainer> findBySpecializationContainingIgnoreCase(@Param("specialization") String specialization);
 }

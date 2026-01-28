@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -56,13 +57,19 @@ public class TrainerService {
         return trainers.stream().map(this::convertToDto).collect(Collectors.toList());
     }
 
+    public List<TrainerDto> getAllTrainers() {
+        log.info("Fetching all trainers");
+        List<Trainer> trainers = trainerRepository.findAll();
+        return trainers.stream().map(this::convertToDto).collect(Collectors.toList());
+    }
+
     public List<TrainerDto> getTrainersBySpecialization(String specialization) {
         log.info("Fetching trainers by specialization: {}", specialization);
         List<Trainer> trainers = trainerRepository.findActiveTrainersBySpecialization(specialization);
         return trainers.stream().map(this::convertToDto).collect(Collectors.toList());
     }
 
-    public List<TrainerDto> getTopRatedTrainers(Double minRating) {
+    public List<TrainerDto> getTopRatedTrainers(BigDecimal minRating) {
         log.info("Fetching top rated trainers with minimum rating: {}", minRating);
         List<Trainer> trainers = trainerRepository.findTopRatedTrainers(minRating);
         return trainers.stream().map(this::convertToDto).collect(Collectors.toList());
