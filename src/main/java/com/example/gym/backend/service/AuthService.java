@@ -65,6 +65,7 @@ public class AuthService {
                 .name(fullName)
 //                .memberId(memberId)
                 .role(user.getRole().name())
+                .gymId(user.getGym() != null ? user.getGym().getId() : null)
                 .build();
     }
 
