@@ -1,7 +1,5 @@
 package com.example.gym.backend.controller;
 
-
-
 import com.example.gym.backend.dto.AttendanceDto;
 import com.example.gym.backend.dto.MemberDto;
 import com.example.gym.backend.service.AttendanceService;
@@ -12,93 +10,96 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
+import com.example.gym.backend.repository.UserRepository;
         import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/gym/attendance")
+@RequestMapping("/api/gyms/{gymId}/attendance")
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "*")
 public class AttendanceController {
 
     private final AttendanceService attendanceService;
-    private final MemberService memberService;
+    private final UserRepository userRepository;
 
-    @PostMapping("/check_in/{memberId}")
+
+    @PostMapping("/check-in/{userId}")
 //    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
-    public ResponseEntity<AttendanceDto> checkIn(
-            @PathVariable Long memberId,
-            @RequestBody AttendanceDto attendanceDto) {
-        log.info("Recording check-in for member ID: {}", memberId);
-        AttendanceDto attendance = attendanceService.checkIn(memberId, attendanceDto);
-        return ResponseEntity.ok(attendance);
+    public AttendanceDto checkIn(
+            @PathVariable Long gymId,
+            @PathVariable Long userId,
+            @RequestBody AttendanceDto dto
+    ) {
+        return attendanceService.checkIn(gymId, userId, dto);
     }
 
-    @PostMapping("/check_out/{attendanceId}")
-//    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
-    public ResponseEntity<AttendanceDto> checkOut(@PathVariable Long attendanceId) {
-        log.info("Recording check-out for attendance ID: {}", attendanceId);
-        AttendanceDto attendance = attendanceService.checkOut(attendanceId);
-        return ResponseEntity.ok(attendance);
+    @PostMapping("/check-out/{userId}")
+    // @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
+    public AttendanceDto checkOut(
+            @PathVariable Long gymId,
+            @PathVariable Long userId
+    ) {
+        return attendanceService.checkOut(gymId, userId);
     }
 
-    @GetMapping("/member/{memberId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
-    public ResponseEntity<List<AttendanceDto>> getMemberAttendance(
-            @PathVariable Long memberId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        log.info("Fetching attendance for member ID: {} on date: {}", memberId, date);
-        List<AttendanceDto> attendances = attendanceService.getMemberAttendance(memberId, date);
-        return ResponseEntity.ok(attendances);
+
+
+    @GetMapping("/current/{userId}")
+    // @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
+    public AttendanceDto getCurrentAttendance(
+            @PathVariable Long gymId,
+            @PathVariable Long userId
+    ) {
+        return attendanceService.getCurrentAttendance(gymId, userId);
     }
 
-    @GetMapping("/date")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
-    public ResponseEntity<List<AttendanceDto>> getAttendanceByDate(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        log.info("Fetching all attendance for date: {}", date);
-
-        if (date == null) {
-            date = LocalDate.now();
-        }
-        List<AttendanceDto> attendances = attendanceService.getAttendanceByDate(date);
-        return ResponseEntity.ok(attendances);
+    @GetMapping("/today/{userId}")
+    // @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
+    public AttendanceDto getTodayCompletedAttendance(
+            @PathVariable Long gymId,
+            @PathVariable Long userId
+    ) {
+        return attendanceService.getTodayCompletedAttendance(gymId, userId);
     }
 
-    @GetMapping("/count/daily")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public ResponseEntity<Long> getDailyAttendanceCount(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        log.info("Fetching daily attendance count for date: {}", date);
-        long count = attendanceService.getDailyAttendanceCount(date);
-        return ResponseEntity.ok(count);
-    }
+    // @GetMapping("/date")
+    // // @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
+    // public ResponseEntity<List<AttendanceDto>> getAttendanceByDate(
+    //         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+    //     log.info("Fetching all attendance for date: {}", date);
 
-    @GetMapping("/summary")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
-    public ResponseEntity<Map<String, Object>> getAttendenceSummary(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+    //     if (date == null) {
+    //         date = LocalDate.now();
+    //     }
+    //     List<AttendanceDto> attendances = attendanceService.getAttendanceByDate(date);
+    //     return ResponseEntity.ok(attendances);
+    // }
 
-        if (date == null) {
-            date = LocalDate.now();
-        }
+    // @GetMapping("/summary")
+    // // @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    // public ResponseEntity<Map<String, Object>> getAttendenceSummary(
+    //         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
 
-        long dailyAttendanceCount = attendanceService.getDailyAttendanceCount(date);
-        Double dailyAverageDuration = attendanceService.getFindAvgDurationByDate(date);
+    //     if (date == null) {
+    //         date = LocalDate.now();
+    //     }
 
-        long activeMembers = memberService.getActiveMembersCount();
+    //     long dailyAttendanceCount = attendanceService.getDailyAttendanceCount(date);
+    //     Double dailyAverageDuration = attendanceService.getFindAvgDurationByDate(date);
 
-        long dailyAbsentMember = activeMembers - dailyAttendanceCount;
+    //     // long activeMembers = memberService.findAllActiveUsers();
+    //     long activeMembers = userRepository.findAllActiveUsers();
+    //     long dailyAbsentMember = activeMembers - dailyAttendanceCount;
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("dailyAttendanceCount", dailyAttendanceCount);
-        response.put("activeMembers", activeMembers);
-        response.put("dailyAverageDuration", dailyAverageDuration);
-        response.put("dailyAbsentMember", dailyAbsentMember);
-        return ResponseEntity.ok(response);
-    }
+    //     Map<String, Object> response = new HashMap<>();
+    //     response.put("dailyAttendanceCount", dailyAttendanceCount);
+    //     response.put("activeMembers", activeMembers);
+    //     response.put("dailyAverageDuration", dailyAverageDuration);
+    //     response.put("dailyAbsentMember", dailyAbsentMember);
+    //     return ResponseEntity.ok(response);
+    // }
 }

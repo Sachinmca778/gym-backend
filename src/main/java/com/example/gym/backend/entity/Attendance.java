@@ -1,49 +1,36 @@
 package com.example.gym.backend.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
+@Setter
 @Table(name = "attendance")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Attendance {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id")
-    private Member member;
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "gym_id")
+    @ManyToOne
+    @JoinColumn(name = "gym_id", nullable = false)
     private Gym gym;
 
-    @NotNull
-    @Column(name = "check_in")
     private LocalDateTime checkIn;
-
-    @Column(name = "check_out")
     private LocalDateTime checkOut;
 
-    @Column(name = "duration_minutes")
     private Integer durationMinutes;
 
-    @NotNull
     @Enumerated(EnumType.STRING)
     private CheckInMethod method;
-
-    @Column(columnDefinition = "TEXT")
-    private String notes;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -54,6 +41,6 @@ public class Attendance {
     }
 
     public enum CheckInMethod {
-        QR_CODE, MANUAL, BIOMETRIC
+        MANUAL, QR
     }
 }

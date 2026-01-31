@@ -16,7 +16,7 @@ import java.util.List;
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
-    List<Payment> findByMemberId(Long memberId);
+    List<Payment> findByMemberId(Long userId);
     List<Payment> findByStatus(PaymentStatus status);
 
     @Query("SELECT p FROM Payment p WHERE p.member.id = :memberId AND p.status = :status")

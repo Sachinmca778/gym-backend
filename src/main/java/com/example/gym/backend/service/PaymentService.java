@@ -64,9 +64,9 @@ public class PaymentService {
         return paymentRepository.getTotalRevenueByDateRange(startDate, endDate);
     }
 
-    public List<PaymentDto> getMemberPayments(Long memberId) {
-        log.info("Fetching payments for member ID: {}", memberId);
-        List<Payment> payments = paymentRepository.findByMemberId(memberId);
+    public List<PaymentDto> getMemberPayments(Long userId) {
+        log.info("Fetching payments for member ID: {}", userId);
+        List<Payment> payments = paymentRepository.findByMemberId(userId);
         return payments.stream().map(this::convertToDto).collect(Collectors.toList());
     }
 

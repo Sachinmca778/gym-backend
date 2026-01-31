@@ -60,11 +60,11 @@ public class PaymentController {
         return ResponseEntity.ok(payments);
     }
 
-    @GetMapping("/member/{memberId}")
+    @GetMapping("/member/{userId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
-    public ResponseEntity<List<PaymentDto>> getMemberPayments(@PathVariable Long memberId) {
-        log.info("Fetching payments for member ID: {}", memberId);
-        List<PaymentDto> payments = paymentService.getMemberPayments(memberId);
+    public ResponseEntity<List<PaymentDto>> getMemberPayments(@PathVariable Long userId) {
+        log.info("Fetching payments for member ID: {}", userId);
+        List<PaymentDto> payments = paymentService.getMemberPayments(userId);
         return ResponseEntity.ok(payments);
     }
 
