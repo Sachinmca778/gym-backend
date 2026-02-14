@@ -1,7 +1,10 @@
 package com.example.gym.backend.service;
 
+import com.example.gym.backend.dto.RegisterUserDto;
 import com.example.gym.backend.dto.UserSearchDto;
+import com.example.gym.backend.entity.Gym;
 import com.example.gym.backend.entity.User;
+import com.example.gym.backend.repository.GymRepository;
 import com.example.gym.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,30 +20,46 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final GymRepository gymRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public User createUser(User user) {
-        log.info("Creating user: {}", user.getUsername());
+    public User createUser(RegisterUserDto dto) {
+        log.info("Creating user: {}", dto.getUsername());
         
         // Check if user already exists
-        if (userRepository.existsByUsername(user.getUsername())) {
+        if (userRepository.existsByUsername(dto.getUsername())) {
             throw new RuntimeException("Username already exists");
         }
         
-        if (userRepository.existsByEmail(user.getEmail())) {
+        if (userRepository.existsByEmail(dto.getEmail())) {
             throw new RuntimeException("Email already exists");
         }
         
-        // Encode password
-        user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
+        // Create new User entity from DTO
+        User user = new User();
+        user.setUsername(dto.getUsername());
+        user.setEmail(dto.getEmail());
+        user.setPasswordHash(passwordEncoder.encode(dto.getPasswordHash()));
+        user.setFirstName(dto.getFirstName());
+        user.setLastName(dto.getLastName());
+        user.setPhone(dto.getPhone());
         
         // Set default role if not provided
-        if (user.getRole() == null) {
+        if (dto.getRole() == null) {
             user.setRole(User.UserRole.ADMIN);
+        } else {
+            user.setRole(dto.getRole());
         }
         
         // Set active status
         user.setActive(true);
+        
+        // Set gym if gymId is provided
+        if (dto.getGym() != null) {
+            Gym gym = gymRepository.findById(dto.getGym())
+                    .orElseThrow(() -> new RuntimeException("Gym not found with id: " + dto.getGym()));
+            user.setGym(gym);
+        }
         
         return userRepository.save(user);
     }

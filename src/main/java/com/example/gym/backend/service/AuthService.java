@@ -43,6 +43,7 @@ public class AuthService {
                 (user.getLastName() != null ? user.getLastName() : "");
         fullName = fullName.trim();
 
+        String roleName = user.getRole() != null ? user.getRole().name() : "MEMBER";
 
         String accessToken = jwtUtil.generateToken(userDetails);
         String refreshToken = jwtUtil.generateRefreshToken(userDetails);
@@ -56,7 +57,7 @@ public class AuthService {
 
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", user.getId());
-        claims.put("role", user.getRole().name());
+        claims.put("role", roleName);
         claims.put("name", fullName);
         claims.put("gymId",user.getGym() != null ? user.getGym().getId() : null);
 
@@ -72,7 +73,7 @@ public class AuthService {
                 .username(user.getUsername())
                 .name(fullName)
 //                .memberId(memberId)
-                .role(user.getRole().name())
+                .role(roleName)
                 .gymId(user.getGym() != null ? user.getGym().getId() : null)
                 .build();
     }

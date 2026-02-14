@@ -2,6 +2,7 @@ package com.example.gym.backend.controller;
 
 import com.example.gym.backend.dto.AuthRequestDto;
 import com.example.gym.backend.dto.AuthResponseDto;
+import com.example.gym.backend.dto.RegisterUserDto;
 import com.example.gym.backend.entity.User;
 import com.example.gym.backend.service.AuthService;
 import com.example.gym.backend.service.RedisTokenService;
@@ -26,9 +27,9 @@ public class AuthController {
     private final RedisTokenService redisTokenService;
 
     @PostMapping("/register")
-    public ResponseEntity<User> register(@Valid @RequestBody User user) {
-        log.info("Registration attempt for user: {}", user.getUsername());
-        User savedUser = userService.createUser(user);
+    public ResponseEntity<User> register(@Valid @RequestBody RegisterUserDto dto) {
+        log.info("Registration attempt for user: {}", dto.getUsername());
+        User savedUser = userService.createUser(dto);
         return ResponseEntity.ok(savedUser);
     }
 
