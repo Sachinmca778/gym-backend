@@ -26,7 +26,7 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PostMapping("/create_record")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','RECEPTIONIST')")
     public ResponseEntity<PaymentDto> recordPayment(@RequestBody PaymentDto paymentDto) {
         log.info("Recording payment for User ID: {}", paymentDto.getUserId());
         PaymentDto payment = paymentService.recordPayment(paymentDto);
@@ -34,7 +34,7 @@ public class PaymentController {
     }
 
     @GetMapping("/summary")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    @PreAuthorize("hasAnyAuthority('SUPER_USER')")
     public ResponseEntity<Map<String, Object>> getPaymentSummary (
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         Double currentMonthAmount = paymentService.getCurrentMonthTotalAmount();
@@ -54,14 +54,14 @@ public class PaymentController {
     }
 
     @GetMapping("/all_payments")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    @PreAuthorize("hasAnyAuthority('SUPER_USER')")
     public ResponseEntity<List<PaymentDto>> findAllPayments() {
         List<PaymentDto> payments = paymentService.findAllPayments();
         return ResponseEntity.ok(payments);
     }
 
     @GetMapping("/member/{userId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
+    @PreAuthorize("hasAnyRole('MEMBER')")
     public ResponseEntity<List<PaymentDto>> getMemberPayments(@PathVariable Long userId) {
         log.info("Fetching payments for member ID: {}", userId);
         List<PaymentDto> payments = paymentService.getMemberPayments(userId);
@@ -69,7 +69,7 @@ public class PaymentController {
     }
 
     @GetMapping("/overdue")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('SUPER_USER')")
     public ResponseEntity<List<PaymentDto>> getOverduePayments() {
         log.info("Fetching overdue payments");
         List<PaymentDto> payments = paymentService.getOverduePayments();
