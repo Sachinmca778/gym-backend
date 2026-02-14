@@ -26,6 +26,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
     private final MemberService memberService;
+    private final RedisTokenService redisTokenService;
 
     public AuthResponseDto login(AuthRequestDto request) {
         log.info("Authenticating user: {}", request.getUsername());
@@ -46,6 +47,10 @@ public class AuthService {
         String accessToken = jwtUtil.generateToken(userDetails);
         String refreshToken = jwtUtil.generateRefreshToken(userDetails);
 
+        // Store tokens in Redis for validation
+        redisTokenService.storeAccessToken(userDetails.getUsername(), accessToken);
+        redisTokenService.storeRefreshToken(userDetails.getUsername(), refreshToken);
+
 //        MemberDto member = memberService.getMemberByUserId(user.getId());
 //        Long memberId = member.getId();
 
@@ -53,7 +58,10 @@ public class AuthService {
         claims.put("userId", user.getId());
         claims.put("role", user.getRole().name());
         claims.put("name", fullName);
-//        claims.put("memberId",memberId);
+        claims.put("gymId",user.getGym() != null ? user.getGym().getId() : null);
+
+        redisTokenService.storeUserSession(userDetails.getUsername(), claims);
+
 
         return AuthResponseDto.builder()
                 .accessToken(accessToken)
@@ -72,10 +80,19 @@ public class AuthService {
     public AuthResponseDto refreshToken(String refreshToken) {
         if (jwtUtil.validateToken(refreshToken)) {
             String username = jwtUtil.extractUsername(refreshToken);
+            
+            // Validate refresh token exists in Redis
+            if (!redisTokenService.validateRefreshToken(username, refreshToken)) {
+                throw new RuntimeException("Invalid refresh token");
+            }
+            
             UserDetails userDetails = userRepository.findByUsername(username)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
             String newAccessToken = jwtUtil.generateToken(userDetails);
+            
+            // Update access token in Redis
+            redisTokenService.storeAccessToken(username, newAccessToken);
 
             return AuthResponseDto.builder()
                     .accessToken(newAccessToken)
@@ -88,7 +105,21 @@ public class AuthService {
     }
 
     public void logout(String token) {
-        // In a real application, you might want to blacklist the token
-        log.info("User logged out successfully");
+        if (token != null && token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+        
+        if (jwtUtil.validateToken(token)) {
+            String username = jwtUtil.extractUsername(token);
+            
+            // Delete tokens from Redis (server-side logout)
+            redisTokenService.deleteTokens(username);
+            redisTokenService.deleteUserSession(username);
+            redisTokenService.deleteUserSession(username);
+
+            log.info("User logged out successfully and tokens removed from Redis: {}", username);
+        } else {
+            log.info("User logged out successfully");
+        }
     }
 }

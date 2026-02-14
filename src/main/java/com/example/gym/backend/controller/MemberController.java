@@ -43,7 +43,7 @@ public class MemberController {
         return ResponseEntity.ok(members);
     }
 
-    @GetMapping("/dashborad/summary")
+    @GetMapping("/dashboard/summary")
     @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
     public ResponseEntity<Map<String, Object>> getDashboardSummary() {
         List<MemberDto> members = memberService.getAllMembers();
