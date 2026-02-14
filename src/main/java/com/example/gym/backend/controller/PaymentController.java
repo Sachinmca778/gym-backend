@@ -28,7 +28,7 @@ public class PaymentController {
     @PostMapping("/create_record")
     @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
     public ResponseEntity<PaymentDto> recordPayment(@RequestBody PaymentDto paymentDto) {
-        log.info("Recording payment for member ID: {}", paymentDto.getMemberId());
+        log.info("Recording payment for User ID: {}", paymentDto.getUserId());
         PaymentDto payment = paymentService.recordPayment(paymentDto);
         return new ResponseEntity<>(payment, HttpStatus.CREATED);
     }

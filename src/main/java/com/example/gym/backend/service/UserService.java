@@ -1,11 +1,15 @@
 package com.example.gym.backend.service;
 
+import com.example.gym.backend.dto.UserSearchDto;
 import com.example.gym.backend.entity.User;
 import com.example.gym.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,5 +43,25 @@ public class UserService {
         user.setActive(true);
         
         return userRepository.save(user);
+    }
+
+    public List<UserSearchDto> searchUsers(String searchTerm) {
+        log.info("Searching users with term: {}", searchTerm);
+        List<User> users = userRepository.searchUsers(searchTerm);
+        return users.stream()
+                .map(this::convertToSearchDto)
+                .collect(Collectors.toList());
+    }
+
+    private UserSearchDto convertToSearchDto(User user) {
+        UserSearchDto dto = new UserSearchDto();
+        dto.setId(user.getId());
+        dto.setUsername(user.getUsername());
+        dto.setFirstName(user.getFirstName());
+        dto.setLastName(user.getLastName());
+        dto.setEmail(user.getEmail());
+        dto.setPhone(user.getPhone());
+        dto.setRole(user.getRole() != null ? user.getRole().name() : null);
+        return dto;
     }
 }

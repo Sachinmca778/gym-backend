@@ -16,11 +16,11 @@ import java.util.List;
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
-    List<Payment> findByMemberId(Long userId);
+    List<Payment> findByUserId(Long userId);
     List<Payment> findByStatus(PaymentStatus status);
 
-    @Query("SELECT p FROM Payment p WHERE p.member.id = :memberId AND p.status = :status")
-    List<Payment> findByMemberIdAndStatus(@Param("memberId") Long memberId, @Param("status") PaymentStatus status);
+    @Query("SELECT p FROM Payment p WHERE p.user.id = :userId AND p.status = :status")
+    List<Payment> findByUserIdAndStatus(@Param("userId") Long userId, @Param("status") PaymentStatus status);
 
     @Query("SELECT p FROM Payment p WHERE p.dueDate <= :dueDate AND p.status = 'PENDING'")
     List<Payment> findOverduePayments(@Param("dueDate") LocalDate dueDate);

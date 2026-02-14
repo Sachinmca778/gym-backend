@@ -14,6 +14,8 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
+import com.example.gym.backend.entity.Payment;
+
 @Entity
 @Table(name = "users")
 @Data
@@ -59,6 +61,10 @@ public class User implements UserDetails {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    // Payments linked to User
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Payment> payments;
 
     @PrePersist
     protected void onCreate() {

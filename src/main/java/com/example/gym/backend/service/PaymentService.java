@@ -4,10 +4,12 @@ import com.example.gym.backend.dto.PaymentDto;
 import com.example.gym.backend.entity.Member;
 import com.example.gym.backend.entity.MemberMembership;
 import com.example.gym.backend.entity.Payment;
+import com.example.gym.backend.entity.User;
 import com.example.gym.backend.exception.ResourceNotFoundException;
 import com.example.gym.backend.repository.MemberRepository;
 import com.example.gym.backend.repository.MemberMembershipRepository;
 import com.example.gym.backend.repository.PaymentRepository;
+import com.example.gym.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,15 +30,16 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final MemberRepository memberRepository;
     private final MemberMembershipRepository membershipRepository;
+    private final UserRepository userRepository;
 
     public PaymentDto recordPayment(PaymentDto paymentDto) {
-        log.info("Recording payment for member ID: {}", paymentDto.getMemberId());
+        log.info("Recording payment for User ID: {}", paymentDto.getUserId());
 
-        Member member = memberRepository.findById(paymentDto.getMemberId())
-                .orElseThrow(() -> new ResourceNotFoundException("Member not found with ID: " + paymentDto.getMemberId()));
+        User user = userRepository.findById(paymentDto.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + paymentDto.getUserId()));
 
         Payment payment = new Payment();
-        payment.setMember(member);
+        payment.setUser(user);
         payment.setAmount(paymentDto.getAmount());
         payment.setPaymentMethod(paymentDto.getPaymentMethod());
         payment.setTransactionId(paymentDto.getTransactionId());
@@ -65,8 +68,8 @@ public class PaymentService {
     }
 
     public List<PaymentDto> getMemberPayments(Long userId) {
-        log.info("Fetching payments for member ID: {}", userId);
-        List<Payment> payments = paymentRepository.findByMemberId(userId);
+        log.info("Fetching payments for user ID: {}", userId);
+        List<Payment> payments = paymentRepository.findByUserId(userId);
         return payments.stream().map(this::convertToDto).collect(Collectors.toList());
     }
 
@@ -92,8 +95,8 @@ public class PaymentService {
     private PaymentDto convertToDto(Payment payment) {
         PaymentDto dto = new PaymentDto();
         dto.setId(payment.getId());
-        dto.setMemberId(payment.getMember().getId());
-        dto.setMemberName(payment.getMember().getFirstName() + " " + payment.getMember().getLastName());
+        dto.setUserId(payment.getUser().getId());
+        dto.setMemberName(payment.getUser().getFirstName() + " " + payment.getUser().getLastName());
         dto.setMembershipId(payment.getMembership() != null ? payment.getMembership().getId() : null);
         dto.setAmount(payment.getAmount());
         dto.setPaymentMethod(payment.getPaymentMethod());
