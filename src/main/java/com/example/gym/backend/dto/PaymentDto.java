@@ -16,6 +16,8 @@ public class PaymentDto {
     private Long userId;
     private String memberName;
     private Long membershipId;
+    private Long gymId;
+    private String gymName;
     private BigDecimal amount;
     private PaymentMethod paymentMethod;
     private String transactionId;

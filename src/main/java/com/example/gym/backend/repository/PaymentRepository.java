@@ -50,6 +50,25 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.status = 'PENDING'")
     BigDecimal getTotalPendingAmount();
 
-    @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.status = 'COMPLETED' AND p.paymentDate BETWEEN :startDate AND :endDate")
+@Query("SELECT SUM(p.amount) FROM Payment p WHERE p.status = 'COMPLETED' AND p.paymentDate BETWEEN :startDate AND :endDate")
     Double getTotalRevenueByDateRange(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    // Gym-wise payment queries
+    @Query("SELECT p FROM Payment p WHERE p.gym.id = :gymId")
+    List<Payment> findByGymId(@Param("gymId") Long gymId);
+
+    @Query("SELECT p FROM Payment p WHERE p.gym.id = :gymId AND p.status = :status")
+    List<Payment> findByGymIdAndStatus(@Param("gymId") Long gymId, @Param("status") PaymentStatus status);
+
+    @Query("SELECT p FROM Payment p WHERE p.gym.id = :gymId AND p.dueDate <= :dueDate AND p.status = 'PENDING'")
+    List<Payment> findOverduePaymentsByGymId(@Param("gymId") Long gymId, @Param("dueDate") LocalDate dueDate);
+
+    @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.gym.id = :gymId AND p.status = 'COMPLETED' AND DATE(p.paymentDate) = :date")
+    BigDecimal getTotalRevenueByDateAndGymId(@Param("gymId") Long gymId, @Param("date") LocalDate date);
+
+    @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.gym.id = :gymId AND p.status = 'PENDING'")
+    BigDecimal getTotalPendingAmountByGymId(@Param("gymId") Long gymId);
+
+    @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.gym.id = :gymId AND p.status = 'COMPLETED' AND p.paymentDate BETWEEN :startDate AND :endDate")
+    Double getTotalRevenueByDateRangeAndGymId(@Param("gymId") Long gymId, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 }

@@ -2,6 +2,9 @@ package com.example.gym.backend.controller;
 
 import com.example.gym.backend.dto.MemberDto;
 import com.example.gym.backend.dto.MemberSearchDto;
+import com.example.gym.backend.entity.User;
+import com.example.gym.backend.entity.User.UserRole;
+import com.example.gym.backend.repository.UserRepository;
 import com.example.gym.backend.service.MemberService;
 import com.example.gym.backend.service.PaymentService;
 import jakarta.validation.Valid;
@@ -12,6 +15,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -27,6 +32,90 @@ public class MemberController {
 
     private final MemberService memberService;
     private final PaymentService paymentService;
+    private final UserRepository userRepository;
+
+    /**
+     * Get current authenticated user from security context
+     */
+    private User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof User) {
+            return (User) authentication.getPrincipal();
+        }
+        // Fallback: try to get user by username from authentication
+        String username = authentication.getName();
+        return userRepository.findByUsername(username).orElse(null);
+    }
+
+    /**
+     * Get dashboard summary with role-based filtering using USER table:
+     * - SUPER_USER: Returns overall counts across all gyms
+     * - ADMIN, MANAGER, RECEPTIONIST: Returns counts filtered by their gym_id
+     */
+    @GetMapping("/dashboard/summary")
+    @PreAuthorize("hasAnyAuthority('SUPER_USER', 'ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    public ResponseEntity<Map<String, Object>> getDashboardSummary() {
+        User currentUser = getCurrentUser();
+
+        long totalUsers;
+        long activeUsers;
+        Double totalPayments;
+        long memberCount; // Users with MEMBER role
+        long trainerCount; // Users with TRAINER role
+        long staffCount; // Users with ADMIN, MANAGER, RECEPTIONIST roles
+
+        // Check if user is SUPER_USER - return overall data
+        if (currentUser != null && currentUser.getRole() == User.UserRole.SUPER_USER) {
+            // SUPER_USER gets overall counts across all gyms
+            totalUsers = userRepository.count();
+            activeUsers = userRepository.findAllActiveUsers().size();
+            totalPayments = paymentService.getCurrentMonthTotalAmount();
+            if (totalPayments == null) totalPayments = 0.0;
+            
+            // Count users by role
+            memberCount = userRepository.countActiveByRole(UserRole.MEMBER);
+            trainerCount = userRepository.countActiveByRole(UserRole.TRAINER);
+            staffCount = userRepository.countActiveByRole(UserRole.ADMIN) 
+                        + userRepository.countActiveByRole(UserRole.MANAGER) 
+                        + userRepository.countActiveByRole(UserRole.RECEPTIONIST);
+        } else {
+            // ADMIN, MANAGER, RECEPTIONIST get gym-specific data
+            Long gymId = currentUser != null && currentUser.getGym() != null
+                ? currentUser.getGym().getId()
+                : null;
+
+            if (gymId == null) {
+                // If no gym assigned, return zeros
+                totalUsers = 0;
+                activeUsers = 0;
+                totalPayments = 0.0;
+                memberCount = 0;
+                trainerCount = 0;
+                staffCount = 0;
+            } else {
+                totalUsers = userRepository.countByGymId(gymId);
+                activeUsers = userRepository.countActiveByGymId(gymId);
+                totalPayments = paymentService.getCurrentMonthTotalAmountByGymId(gymId);
+                if (totalPayments == null) totalPayments = 0.0;
+                
+                // Count users by role for this gym
+                memberCount = userRepository.countByGymIdAndRole(gymId, UserRole.MEMBER);
+                trainerCount = userRepository.countByGymIdAndRole(gymId, UserRole.TRAINER);
+                staffCount = userRepository.countByGymIdAndRole(gymId, UserRole.ADMIN)
+                           + userRepository.countByGymIdAndRole(gymId, UserRole.MANAGER)
+                           + userRepository.countByGymIdAndRole(gymId, UserRole.RECEPTIONIST);
+            }
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("totalUsers", totalUsers);
+        response.put("activeUsers", activeUsers);
+        response.put("totalPaymentsCurrentMonth", totalPayments);
+        response.put("memberCount", memberCount);
+        response.put("trainerCount", trainerCount);
+        response.put("staffCount", staffCount);
+        return ResponseEntity.ok(response);
+    }
 
     @PostMapping("/create")
     @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
@@ -37,28 +126,10 @@ public class MemberController {
     }
 
     @GetMapping("/all")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    @PreAuthorize("hasAnyAuthority('SUPER_USER','ADMIN', 'MANAGER', 'RECEPTIONIST')")
     public ResponseEntity<List<MemberDto>> getAllMembers() {
         List<MemberDto> members = memberService.getAllMembers();
         return ResponseEntity.ok(members);
-    }
-
-    @GetMapping("/dashboard/summary")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
-    public ResponseEntity<Map<String, Object>> getDashboardSummary() {
-        List<MemberDto> members = memberService.getAllMembers();
-        long totalMembers = members.size();
-        long activeMembers = memberService.getActiveMembersCount();
-        Double totalPayments = paymentService.getCurrentMonthTotalAmount();
-        if (totalPayments == null) totalPayments = 0.0;
-        List<MemberDto> expiringMembers = memberService.getMembersWithExpiringMemberships(7);
-        long expiringMembersCount = expiringMembers.size();
-        Map<String, Object> response = new HashMap<>();
-        response.put("totalMembers", totalMembers);
-        response.put("activeMembers", activeMembers);
-        response.put("totalPaymentsCurrentMonth", totalPayments);
-        response.put("expiringMembersCount", expiringMembersCount);
-        return ResponseEntity.ok(response);
     }
 
 

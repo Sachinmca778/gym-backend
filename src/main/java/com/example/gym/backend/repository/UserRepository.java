@@ -1,6 +1,7 @@
 package com.example.gym.backend.repository;
 
 import com.example.gym.backend.entity.User;
+import com.example.gym.backend.entity.User.UserRole;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -23,6 +24,23 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.isActive = true")
     List<User> findAllActiveUsers();
 
-    @Query("SELECT u FROM User u WHERE (LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(u.username) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) AND u.isActive = true")
+    @Query("SELECT u FROM User u WHERE (LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
     List<User> searchUsers(@Param("searchTerm") String searchTerm);
+
+    // Gym-based queries for dashboard
+    @Query("SELECT u FROM User u WHERE u.gym.id = :gymId")
+    List<User> findByGymId(@Param("gymId") Long gymId);
+
+    @Query("SELECT COUNT(u) FROM User u WHERE u.gym.id = :gymId")
+    long countByGymId(@Param("gymId") Long gymId);
+
+    @Query("SELECT COUNT(u) FROM User u WHERE u.gym.id = :gymId AND u.isActive = true")
+    long countActiveByGymId(@Param("gymId") Long gymId);
+
+    @Query("SELECT COUNT(u) FROM User u WHERE u.gym.id = :gymId AND u.role = :role AND u.isActive = true")
+    long countByGymIdAndRole(@Param("gymId") Long gymId, @Param("role") UserRole role);
+
+    @Query("SELECT COUNT(u) FROM User u WHERE u.role = :role AND u.isActive = true")
+    long countActiveByRole(@Param("role") UserRole role);
 }
+
