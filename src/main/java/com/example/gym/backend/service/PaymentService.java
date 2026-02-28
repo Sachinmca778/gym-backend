@@ -289,12 +289,20 @@ private PaymentDto convertToDto(Payment payment) {
         PaymentDto dto = new PaymentDto();
         dto.setId(payment.getId());
         dto.setUserId(payment.getUser().getId());
+        
+        if (payment.getUser() != null) {
+            dto.setMemberName(payment.getUser().getFirstName() + " " + payment.getUser().getLastName());
+            dto.setMemberPhone(payment.getUser().getPhone());
+            dto.setMemberEmail(payment.getUser().getEmail());
+        }
+        
         // dto.setMemberName(payment.getUser().getFirstName() + " " + payment.getUser().getLastName());
         // dto.setMembershipId(payment.getMembership() != null ? payment.getMembership().getId() : null);
         
         // Set membershipPlan info
         if (payment.getMembershipPlan() != null) {
             dto.setMembershipPlanId(payment.getMembershipPlan().getId());
+            dto.setMembershipPlanName(payment.getMembershipPlan().getName());
         }
         
         // Set gym info

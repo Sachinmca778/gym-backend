@@ -14,9 +14,13 @@ public class PaymentDto {
 
     private Long id;
     private Long userId;
+    private String memberName;
+    private String memberPhone;
+    private String memberEmail;
     // private String memberName;
     // private Long membershipId;
     private Long membershipPlanId;
+    private String membershipPlanName;
     private Long gymId;
     private String gymName;
     private BigDecimal amount;
