@@ -3,6 +3,7 @@ package com.example.gym.backend.service;
 import com.example.gym.backend.dto.PaymentDto;
 import com.example.gym.backend.entity.Member;
 import com.example.gym.backend.entity.MemberMembership;
+import com.example.gym.backend.entity.MembershipPlan;
 import com.example.gym.backend.entity.Payment;
 import com.example.gym.backend.entity.User;
 import com.example.gym.backend.entity.Gym;
@@ -10,6 +11,7 @@ import com.example.gym.backend.exception.ResourceNotFoundException;
 import com.example.gym.backend.repository.GymRepository;
 import com.example.gym.backend.repository.MemberRepository;
 import com.example.gym.backend.repository.MemberMembershipRepository;
+import com.example.gym.backend.repository.MembershipPlanRepository;
 import com.example.gym.backend.repository.PaymentRepository;
 import com.example.gym.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final MemberRepository memberRepository;
     private final MemberMembershipRepository membershipRepository;
+    private final MembershipPlanRepository membershipPlanRepository;
     private final UserRepository userRepository;
     private final GymRepository gymRepository;
 
@@ -61,15 +64,12 @@ public class PaymentService {
         payment.setDueDate(paymentDto.getDueDate());
         payment.setNotes(paymentDto.getNotes());
 
-        // If membership ID is provided, link it
-        if (paymentDto.getMembershipId() != null) {
-            MemberMembership membership = membershipRepository.findById(paymentDto.getMembershipId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Membership not found with ID: " + paymentDto.getMembershipId()));
-            payment.setMembership(membership);
-            // Also set gym from membership if not already set
-            if (payment.getGym() == null && membership.getGym() != null) {
-                payment.setGym(membership.getGym());
-            }
+
+        // If membershipPlan ID is provided, link it (from MembershipPlan table)
+        if (paymentDto.getMembershipPlanId() != null) {
+            MembershipPlan membershipPlan = membershipPlanRepository.findById(paymentDto.getMembershipPlanId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Membership Plan not found with ID: " + paymentDto.getMembershipPlanId()));
+            payment.setMembershipPlan(membershipPlan);
         }
 
         Payment savedPayment = paymentRepository.save(payment);
@@ -140,8 +140,13 @@ private PaymentDto convertToDto(Payment payment) {
         PaymentDto dto = new PaymentDto();
         dto.setId(payment.getId());
         dto.setUserId(payment.getUser().getId());
-        dto.setMemberName(payment.getUser().getFirstName() + " " + payment.getUser().getLastName());
-        dto.setMembershipId(payment.getMembership() != null ? payment.getMembership().getId() : null);
+        // dto.setMemberName(payment.getUser().getFirstName() + " " + payment.getUser().getLastName());
+        // dto.setMembershipId(payment.getMembership() != null ? payment.getMembership().getId() : null);
+        
+        // Set membershipPlan info
+        if (payment.getMembershipPlan() != null) {
+            dto.setMembershipPlanId(payment.getMembershipPlan().getId());
+        }
         
         // Set gym info
         if (payment.getGym() != null) {

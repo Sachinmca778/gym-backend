@@ -13,6 +13,7 @@ import java.util.List;
 public class MembershipPlanDto {
 
     private Long id;
+    private Long gymId;
 
     @NotBlank(message = "Plan name is required")
     private String name;
@@ -30,6 +31,6 @@ public class MembershipPlanDto {
     private String features;
     // private List<String> features;
 
-    private boolean isActive;
+    private boolean isActive = true;
     private LocalDateTime createdAt;
 }

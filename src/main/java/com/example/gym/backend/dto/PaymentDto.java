@@ -14,8 +14,9 @@ public class PaymentDto {
 
     private Long id;
     private Long userId;
-    private String memberName;
-    private Long membershipId;
+    // private String memberName;
+    // private Long membershipId;
+    private Long membershipPlanId;
     private Long gymId;
     private String gymName;
     private BigDecimal amount;

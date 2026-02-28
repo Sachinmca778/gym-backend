@@ -17,7 +17,11 @@ public interface MembershipPlanRepository extends JpaRepository<MembershipPlan, 
     @Query(value = "SELECT * FROM membership_plans WHERE is_active = 1", nativeQuery = true)
     List<MembershipPlan> findActivePlans();
 
+    @Query(value = "SELECT * FROM membership_plans WHERE is_active = 1 AND gym_id = :gymId", nativeQuery = true)
+    List<MembershipPlan> findActivePlansByGymId(@Param("gymId") Long gymId);
 
+    @Query(value = "SELECT * FROM membership_plans WHERE gym_id = :gymId", nativeQuery = true)
+    List<MembershipPlan> findAllByGymId(@Param("gymId") Long gymId);
 
     @Query("SELECT p FROM MembershipPlan p WHERE p.isActive = true AND p.price BETWEEN :minPrice AND :maxPrice")
     List<MembershipPlan> findActivePlansByPriceRange(@Param("minPrice") Double minPrice,

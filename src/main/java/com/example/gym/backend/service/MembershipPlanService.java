@@ -2,11 +2,17 @@ package com.example.gym.backend.service;
 
 
 import com.example.gym.backend.dto.MembershipPlanDto;
+import com.example.gym.backend.entity.Gym;
 import com.example.gym.backend.entity.MembershipPlan;
+import com.example.gym.backend.entity.User;
 import com.example.gym.backend.exception.ResourceNotFoundException;
+import com.example.gym.backend.repository.GymRepository;
 import com.example.gym.backend.repository.MembershipPlanRepository;
+import com.example.gym.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +27,8 @@ import java.util.stream.Collectors;
 public class MembershipPlanService {
 
     private final MembershipPlanRepository planRepository;
+    private final UserRepository userRepository;
+    private final GymRepository gymRepository;
 
     public MembershipPlanDto createPlan(MembershipPlanDto planDto) {
         log.info("Creating new membership plan: {}", planDto.getName());
@@ -40,11 +48,49 @@ public class MembershipPlanService {
 
         plan.setActive(planDto.isActive());
 
+        // Set gym from authenticated user
+        Long gymId = getAuthenticatedUserGymId();
+        if (gymId != null) {
+            Gym gym = gymRepository.findById(gymId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Gym not found with ID: " + gymId));
+            plan.setGym(gym);
+        }
 
         MembershipPlan savedPlan = planRepository.save(plan);
         log.info("Membership plan created successfully with ID: {}", savedPlan.getId());
 
         return convertToDto(savedPlan);
+    }
+
+    /**
+     * Get the authenticated user's gym ID
+     * Returns null if user is SUPER_USER (should see all data)
+     */
+    private Long getAuthenticatedUserGymId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+        
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username).orElse(null);
+        
+        if (user == null) {
+            return null;
+        }
+        
+        // SUPER_USER should see all, return null to indicate no filter
+        if (user.getRole() == User.UserRole.SUPER_USER) {
+            return null;
+        }
+        
+        // For ADMIN, RECEPTIONIST, etc., return their gym ID
+        Gym gym = user.getGym();
+        if (gym != null) {
+            return gym.getId();
+        }
+        
+        return null;
     }
 
     public MembershipPlanDto getPlanById(Long id) {
@@ -57,14 +103,26 @@ public class MembershipPlanService {
     public List<MembershipPlanDto> getAllActivePlans() {
         log.info("Fetching all active membership plans");
 //        List<MembershipPlan> plans = planRepository.findByIsActiveTrue();
-        List<MembershipPlan> plans = planRepository.findActivePlans();
+        Long gymId = getAuthenticatedUserGymId();
+        List<MembershipPlan> plans;
+        if (gymId != null) {
+            plans = planRepository.findActivePlansByGymId(gymId);
+        } else {
+            plans = planRepository.findActivePlans();
+        }
 
         return plans.stream().map(this::convertToDto).collect(Collectors.toList());
     }
 
     public List<MembershipPlanDto> getAllPlans() {
         log.info("Fetching all membership plans");
-        List<MembershipPlan> plans = planRepository.findAll();
+        Long gymId = getAuthenticatedUserGymId();
+        List<MembershipPlan> plans;
+        if (gymId != null) {
+            plans = planRepository.findAllByGymId(gymId);
+        } else {
+            plans = planRepository.findAll();
+        }
         return plans.stream().map(this::convertToDto).collect(Collectors.toList());
     }
 
@@ -110,6 +168,7 @@ public class MembershipPlanService {
     private MembershipPlanDto convertToDto(MembershipPlan plan) {
         MembershipPlanDto dto = new MembershipPlanDto();
         dto.setId(plan.getId());
+        dto.setGymId(plan.getGym() != null ? plan.getGym().getId() : null);
         dto.setName(plan.getName());
         dto.setDescription(plan.getDescription());
         dto.setDurationMonths(plan.getDurationMonths());

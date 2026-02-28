@@ -32,8 +32,8 @@ public class Payment {
     private Gym gym;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "membership_id")
-    private MemberMembership membership;
+    @JoinColumn(name = "membership_plan_id")
+    private MembershipPlan membershipPlan;
 
     @NotNull
     @Positive
