@@ -22,7 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -134,6 +136,153 @@ public class PaymentService {
         LocalDateTime startDate = LocalDate.now().withDayOfMonth(1).atStartOfDay();
         LocalDateTime endDate = LocalDateTime.now();
         return paymentRepository.getTotalRevenueByDateRangeAndGymId(gymId, startDate, endDate);
+    }
+
+    /**
+     * Get payments with filters and pagination
+     * Filter types: RECENT, TODAY_EXPIRES, UPCOMING_7_DAYS, OVERDUES
+     */
+    public Map<String, Object> findPaymentsByFilter(Long gymId, String filter, int page, int size) {
+        log.info("Fetching payments with filter: {} for gymId: {}", filter, gymId);
+        
+        List<PaymentDto> allFilteredPayments;
+        LocalDate today = LocalDate.now();
+        
+        switch (filter.toUpperCase()) {
+            case "TODAY_EXPIRES":
+                // Memberships expiring today
+                allFilteredPayments = getTodayExpiringMemberships(gymId, today);
+                break;
+                
+            case "UPCOMING_7_DAYS":
+                // Memberships expiring in next 7 days (not including today)
+                allFilteredPayments = getUpcomingExpiringMemberships(gymId, today);
+                break;
+                
+            case "OVERDUES":
+                // Memberships expired yesterday (one day ago)
+                allFilteredPayments = getOverdueMemberships(gymId, today);
+                break;
+                
+            case "RECENT":
+            default:
+                // Recent transactions - most recent payments first
+                allFilteredPayments = getRecentPayments(gymId);
+                break;
+        }
+        
+        // Calculate pagination
+        int start = page * size;
+        int end = Math.min(start + size, allFilteredPayments.size());
+        
+        List<PaymentDto> pagedPayments;
+        if (start < allFilteredPayments.size()) {
+            pagedPayments = allFilteredPayments.subList(start, end);
+        } else {
+            pagedPayments = List.of();
+        }
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("payments", pagedPayments);
+        result.put("totalCount", (long) allFilteredPayments.size());
+        
+        return result;
+    }
+    
+    private List<PaymentDto> getRecentPayments(Long gymId) {
+        List<Payment> payments;
+        if (gymId != null) {
+            payments = paymentRepository.findByGymId(gymId);
+        } else {
+            payments = paymentRepository.findAllPayments();
+        }
+        
+        // Sort by payment date descending (most recent first)
+        return payments.stream()
+            .sorted((p1, p2) -> {
+                if (p1.getPaymentDate() == null && p2.getPaymentDate() == null) return 0;
+                if (p1.getPaymentDate() == null) return 1;
+                if (p2.getPaymentDate() == null) return -1;
+                return p2.getPaymentDate().compareTo(p1.getPaymentDate());
+            })
+            .map(this::convertToDto)
+            .collect(Collectors.toList());
+    }
+    
+    private List<PaymentDto> getTodayExpiringMemberships(Long gymId, LocalDate today) {
+        // Find memberships ending today
+        List<MemberMembership> memberships;
+        if (gymId != null) {
+            memberships = membershipRepository.findByGymIdAndEndDate(gymId, today);
+        } else {
+            memberships = membershipRepository.findByEndDate(today);
+        }
+        
+        return memberships.stream()
+            .map(m -> {
+                PaymentDto dto = new PaymentDto();
+                dto.setId(m.getId());
+                // Member has userId field directly
+                dto.setUserId(m.getMember() != null ? m.getMember().getUserId() : null);
+                dto.setAmount(m.getAmountPaid());
+                dto.setDueDate(m.getEndDate());
+                dto.setStatus(Payment.PaymentStatus.PENDING);
+                dto.setNotes("Membership expires today - " + (m.getPlan() != null ? m.getPlan().getName() : ""));
+                return dto;
+            })
+            .collect(Collectors.toList());
+    }
+    
+    private List<PaymentDto> getUpcomingExpiringMemberships(Long gymId, LocalDate today) {
+        LocalDate nextWeek = today.plusDays(7);
+        
+        List<MemberMembership> memberships;
+        if (gymId != null) {
+            memberships = membershipRepository.findByGymIdAndEndDateBetween(gymId, today.plusDays(1), nextWeek);
+        } else {
+            memberships = membershipRepository.findByEndDateBetween(today.plusDays(1), nextWeek);
+        }
+        
+        return memberships.stream()
+            .map(m -> {
+                PaymentDto dto = new PaymentDto();
+                dto.setId(m.getId());
+                // Member has userId field directly
+                dto.setUserId(m.getMember() != null ? m.getMember().getUserId() : null);
+                dto.setAmount(m.getAmountPaid());
+                dto.setDueDate(m.getEndDate());
+                dto.setStatus(Payment.PaymentStatus.PENDING);
+                dto.setNotes("Membership expiring in " + java.time.temporal.ChronoUnit.DAYS.between(today, m.getEndDate()) + " days - " + 
+                    (m.getPlan() != null ? m.getPlan().getName() : ""));
+                return dto;
+            })
+            .collect(Collectors.toList());
+    }
+    
+    private List<PaymentDto> getOverdueMemberships(Long gymId, LocalDate today) {
+        // Overdues = expired one day ago
+        LocalDate yesterday = today.minusDays(1);
+        
+        List<MemberMembership> memberships;
+        if (gymId != null) {
+            memberships = membershipRepository.findByGymIdAndEndDate(gymId, yesterday);
+        } else {
+            memberships = membershipRepository.findByEndDate(yesterday);
+        }
+        
+        return memberships.stream()
+            .map(m -> {
+                PaymentDto dto = new PaymentDto();
+                dto.setId(m.getId());
+                // Member has userId field directly
+                dto.setUserId(m.getMember() != null ? m.getMember().getUserId() : null);
+                dto.setAmount(m.getAmountPaid());
+                dto.setDueDate(m.getEndDate());
+                dto.setStatus(Payment.PaymentStatus.PENDING);
+                dto.setNotes("Membership overdue - expired yesterday - " + (m.getPlan() != null ? m.getPlan().getName() : ""));
+                return dto;
+            })
+            .collect(Collectors.toList());
     }
 
 private PaymentDto convertToDto(Payment payment) {

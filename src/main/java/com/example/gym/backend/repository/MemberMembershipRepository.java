@@ -20,4 +20,17 @@ public interface MemberMembershipRepository extends JpaRepository<MemberMembersh
 
     @Query("SELECT m FROM MemberMembership m WHERE m.endDate <= :date AND m.status = 'ACTIVE'")
     List<MemberMembership> findExpiringMemberships(@Param("date") LocalDate date);
+    
+    // New methods for payment filter functionality
+    @Query("SELECT m FROM MemberMembership m WHERE m.gym.id = :gymId AND m.endDate = :endDate")
+    List<MemberMembership> findByGymIdAndEndDate(@Param("gymId") Long gymId, @Param("endDate") LocalDate endDate);
+    
+    @Query("SELECT m FROM MemberMembership m WHERE m.endDate = :endDate")
+    List<MemberMembership> findByEndDate(@Param("endDate") LocalDate endDate);
+    
+    @Query("SELECT m FROM MemberMembership m WHERE m.gym.id = :gymId AND m.endDate BETWEEN :startDate AND :endDate")
+    List<MemberMembership> findByGymIdAndEndDateBetween(@Param("gymId") Long gymId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+    
+    @Query("SELECT m FROM MemberMembership m WHERE m.endDate BETWEEN :startDate AND :endDate")
+    List<MemberMembership> findByEndDateBetween(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 }

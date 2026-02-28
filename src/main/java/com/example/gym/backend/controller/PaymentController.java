@@ -127,18 +127,35 @@ public class PaymentController {
 
     @GetMapping("/all_payments")
     @PreAuthorize("hasAnyAuthority('SUPER_USER', 'ADMIN', 'RECEPTIONIST')")
-    public ResponseEntity<List<PaymentDto>> findAllPayments() {
+    public ResponseEntity<Map<String, Object>> findAllPayments(
+            @RequestParam(required = false, defaultValue = "RECENT") String filter,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "5") int size) {
         Long gymId = getAuthenticatedUserGymId();
+        
         List<PaymentDto> payments;
+        long totalCount;
         
         if (gymId != null) {
             // Admin/Receptionist - filter by gym
-            payments = paymentService.findPaymentsByGymId(gymId);
+            Map<String, Object> result = paymentService.findPaymentsByFilter(gymId, filter, page, size);
+            payments = (List<PaymentDto>) result.get("payments");
+            totalCount = (Long) result.get("totalCount");
         } else {
             // Super user - see all
-            payments = paymentService.findAllPayments();
+            Map<String, Object> result = paymentService.findPaymentsByFilter(null, filter, page, size);
+            payments = (List<PaymentDto>) result.get("payments");
+            totalCount = (Long) result.get("totalCount");
         }
-        return ResponseEntity.ok(payments);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", payments);
+        response.put("totalElements", totalCount);
+        response.put("totalPages", (int) Math.ceil((double) totalCount / size));
+        response.put("currentPage", page);
+        response.put("pageSize", size);
+        
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/member/{userId}")
