@@ -43,4 +43,11 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     @Query("SELECT DISTINCT m FROM Member m JOIN m.memberships mm WHERE mm.endDate <= :expiryDate AND m.status = 'ACTIVE'")
     List<Member> findMembersWithExpiringMemberships(@Param("expiryDate") LocalDate expiryDate);
+
+    /**
+     * Find the highest member code for a given date prefix (e.g., "M20260301")
+     * Used to initialize the member code generator counter
+     */
+    @Query("SELECT m.memberCode FROM Member m WHERE m.memberCode LIKE :prefix% ORDER BY m.memberCode DESC")
+    List<String> findMemberCodesByPrefix(@Param("prefix") String prefix);
 }
