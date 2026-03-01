@@ -121,8 +121,44 @@ public class MemberController {
     @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
     public ResponseEntity<MemberDto> createMember(@Valid @RequestBody MemberDto memberDto) {
         log.info("Creating new member: {}", memberDto.getFirstName() + " " + memberDto.getLastName());
-        MemberDto createdMember = memberService.createMember(memberDto);
+        User currentUser = getCurrentUser();
+        MemberDto createdMember = memberService.createMember(memberDto, currentUser);
         return new ResponseEntity<>(createdMember, HttpStatus.CREATED);
+    }
+
+    /**
+     * Member creates their own profile - uses their user data
+     * MEMBER role can only create their own profile
+     */
+    @PostMapping("/create/my-profile")
+    @PreAuthorize("hasAuthority('ROLE_MEMBER')")
+    public ResponseEntity<MemberDto> createMyProfile(@Valid @RequestBody MemberDto memberDto) {
+        User currentUser = getCurrentUser();
+        log.info("Member {} creating their own profile", currentUser.getUsername());
+        
+        // Set the userId to current user's ID
+        memberDto.setUserId(currentUser.getId());
+        
+        MemberDto createdMember = memberService.createMember(memberDto, currentUser);
+        return new ResponseEntity<>(createdMember, HttpStatus.CREATED);
+    }
+
+    /**
+     * Get current user's member profile (if exists)
+     * MEMBER role can access their own profile
+     */
+    @GetMapping("/my-profile")
+    @PreAuthorize("hasAuthority('ROLE_MEMBER')")
+    public ResponseEntity<MemberDto> getMyProfile() {
+        User currentUser = getCurrentUser();
+        log.info("Fetching profile for user: {}", currentUser.getUsername());
+        
+        try {
+            MemberDto member = memberService.getMemberByUserId(currentUser.getId());
+            return ResponseEntity.ok(member);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @GetMapping("/all")

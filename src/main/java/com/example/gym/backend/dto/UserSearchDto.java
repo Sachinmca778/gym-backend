@@ -15,5 +15,6 @@ public class UserSearchDto {
     private String email;
     private String phone;
     private String role;
+    private Long gymId;
 }
 

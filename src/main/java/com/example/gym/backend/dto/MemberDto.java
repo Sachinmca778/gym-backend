@@ -55,4 +55,5 @@ public class MemberDto {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Long userId;
+    private Long gymId;
 }

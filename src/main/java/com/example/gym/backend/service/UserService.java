@@ -72,6 +72,31 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Get all active users - for admin to select when creating a member
+     * ADMIN/MANAGER/RECEPTIONIST can see all users in their gym
+     * SUPER_USER can see all users
+     */
+    public List<UserSearchDto> getAllUsers(User currentUser) {
+        log.info("Getting all users for user: {}", currentUser.getUsername());
+        
+        List<User> users;
+        
+        // If SUPER_USER, get all users
+        if (currentUser.getRole() == User.UserRole.SUPER_USER) {
+            users = userRepository.findAllActive();
+        } else if (currentUser.getGym() != null) {
+            // Get users for the specific gym
+            users = userRepository.findActiveByGymId(currentUser.getGym().getId());
+        } else {
+            users = List.of();
+        }
+        
+        return users.stream()
+                .map(this::convertToSearchDto)
+                .collect(Collectors.toList());
+    }
+
     private UserSearchDto convertToSearchDto(User user) {
         UserSearchDto dto = new UserSearchDto();
         dto.setId(user.getId());
@@ -81,6 +106,7 @@ public class UserService {
         dto.setEmail(user.getEmail());
         dto.setPhone(user.getPhone());
         dto.setRole(user.getRole() != null ? user.getRole().name() : null);
+        dto.setGymId(user.getGym() != null ? user.getGym().getId() : null);
         return dto;
     }
 }

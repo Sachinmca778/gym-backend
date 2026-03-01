@@ -4,9 +4,13 @@ package com.example.gym.backend.service;
 
 import com.example.gym.backend.dto.MemberDto;
 import com.example.gym.backend.dto.MemberSearchDto;
+import com.example.gym.backend.entity.Gym;
 import com.example.gym.backend.entity.Member;
+import com.example.gym.backend.entity.User;
 import com.example.gym.backend.exception.ResourceNotFoundException;
+import com.example.gym.backend.repository.GymRepository;
 import com.example.gym.backend.repository.MemberRepository;
+import com.example.gym.backend.repository.UserRepository;
 import com.example.gym.backend.util.MemberCodeGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +30,8 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final MemberCodeGenerator memberCodeGenerator;
+    private final UserRepository userRepository;
+    private final GymRepository gymRepository;
 
     public List<MemberDto> getAllMembers() {
         List<Member> members = memberRepository.findAll();
@@ -34,18 +40,64 @@ public class MemberService {
                 .toList();
     }
 
-    public MemberDto createMember(MemberDto memberDto) {
-        log.info("Creating new member: {}", memberDto.getFirstName() + " " + memberDto.getLastName());
+    /**
+     * Create member - either from user data (admin selecting user) or from form data
+     * 
+     * @param memberDto MemberDto containing either userId (to fetch from User table) or form data
+     * @param currentUser The admin/manager creating the member
+     * @return Created MemberDto
+     */
+    public MemberDto createMember(MemberDto memberDto, User currentUser) {
+        log.info("Creating new member with userId: {}", memberDto.getUserId());
 
         // Generate unique member code
         String memberCode = memberCodeGenerator.generateUniqueCode();
 
         Member member = new Member();
         member.setMemberCode(memberCode);
-        member.setFirstName(memberDto.getFirstName());
-        member.setLastName(memberDto.getLastName());
-        member.setEmail(memberDto.getEmail());
-        member.setPhone(memberDto.getPhone());
+        
+        // Determine gym - from memberDto or from current user's gym
+        Gym gym = null;
+        if (memberDto.getGymId() != null) {
+            gym = gymRepository.findById(memberDto.getGymId())
+                    .orElse(null);
+        } else if (currentUser.getGym() != null) {
+            gym = currentUser.getGym();
+        }
+        member.setGym(gym);
+
+        // If userId is provided, fetch data from User table
+        if (memberDto.getUserId() != null) {
+            User user = userRepository.findById(memberDto.getUserId())
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + memberDto.getUserId()));
+            
+            // Check if user already has a member profile
+            if (memberRepository.findByUserId(user.getId()).isPresent()) {
+                throw new RuntimeException("User already has a member profile");
+            }
+            
+            // Populate member data from User table
+            member.setUserId(user.getId());
+            member.setFirstName(user.getFirstName());
+            member.setLastName(user.getLastName());
+            member.setEmail(user.getEmail());
+            member.setPhone(user.getPhone());
+            
+            // Use gym from user if available
+            if (user.getGym() != null) {
+                member.setGym(user.getGym());
+            }
+            
+            log.info("Creating member from user data: {} {}", user.getFirstName(), user.getLastName());
+        } else {
+            // Use form data directly
+            member.setFirstName(memberDto.getFirstName());
+            member.setLastName(memberDto.getLastName());
+            member.setEmail(memberDto.getEmail());
+            member.setPhone(memberDto.getPhone());
+        }
+
+        // Set other fields from form data (can be edited after selecting user)
         member.setDateOfBirth(memberDto.getDateOfBirth());
         member.setGender(memberDto.getGender());
         member.setAddress(memberDto.getAddress());
@@ -166,6 +218,7 @@ public class MemberService {
         dto.setCreatedAt(member.getCreatedAt());
         dto.setUpdatedAt(member.getUpdatedAt());
         dto.setUserId(member.getUserId());
+        dto.setGymId(member.getGym() != null ? member.getGym().getId() : null);
         return dto;
     }
 }

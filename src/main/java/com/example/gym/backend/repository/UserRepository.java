@@ -42,5 +42,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT COUNT(u) FROM User u WHERE u.role = :role AND u.isActive = true")
     long countActiveByRole(@Param("role") UserRole role);
+
+    // Get all users (for admin to select when creating member)
+    @Query("SELECT u FROM User u WHERE u.isActive = true")
+    List<User> findAllActive();
+
+    // Get users by gym
+    @Query("SELECT u FROM User u WHERE u.gym.id = :gymId AND u.isActive = true")
+    List<User> findActiveByGymId(@Param("gymId") Long gymId);
 }
 
