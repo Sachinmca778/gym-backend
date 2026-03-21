@@ -52,7 +52,7 @@ public class MemberController {
      * - ADMIN, MANAGER, RECEPTIONIST: Returns counts filtered by their gym_id
      */
     @GetMapping("/dashboard/summary")
-    @PreAuthorize("hasAnyAuthority('SUPER_USER', 'ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    // @PreAuthorize("hasAnyAuthority('SUPER_USER', 'ADMIN', 'MANAGER', 'RECEPTIONIST')")
     public ResponseEntity<Map<String, Object>> getDashboardSummary() {
         User currentUser = getCurrentUser();
 
@@ -117,7 +117,7 @@ public class MemberController {
     }
 
     @PostMapping("/create")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    // @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
     public ResponseEntity<MemberDto> createMember(@Valid @RequestBody MemberDto memberDto) {
         log.info("Creating new member: {}", memberDto.getFirstName() + " " + memberDto.getLastName());
         User currentUser = getCurrentUser();
@@ -130,7 +130,7 @@ public class MemberController {
      * MEMBER role can only create their own profile
      */
     @PostMapping("/create/my-profile")
-    @PreAuthorize("hasAuthority('ROLE_MEMBER')")
+    // @PreAuthorize("hasAuthority('ROLE_MEMBER')")
     public ResponseEntity<MemberDto> createMyProfile(@Valid @RequestBody MemberDto memberDto) {
         User currentUser = getCurrentUser();
         log.info("Member {} creating their own profile", currentUser.getUsername());
@@ -147,7 +147,7 @@ public class MemberController {
      * MEMBER role can access their own profile
      */
     @GetMapping("/my-profile")
-    @PreAuthorize("hasAuthority('ROLE_MEMBER')")
+    // @PreAuthorize("hasAuthority('ROLE_MEMBER')")
     public ResponseEntity<MemberDto> getMyProfile() {
         User currentUser = getCurrentUser();
         log.info("Fetching profile for user: {}", currentUser.getUsername());
@@ -161,7 +161,7 @@ public class MemberController {
     }
 
     @GetMapping("/all")
-    @PreAuthorize("hasAnyAuthority('SUPER_USER','ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    // @PreAuthorize("hasAnyAuthority('SUPER_USER','ADMIN', 'MANAGER', 'RECEPTIONIST')")
     public ResponseEntity<List<MemberDto>> getAllMembers() {
         List<MemberDto> members = memberService.getAllMembers();
         return ResponseEntity.ok(members);
@@ -169,7 +169,7 @@ public class MemberController {
 
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
+    // @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
     public ResponseEntity<MemberDto> getMemberById(@PathVariable Long id) {
         log.info("Fetching member with ID: {}", id);
         MemberDto member = memberService.getMemberById(id);
@@ -177,7 +177,7 @@ public class MemberController {
     }
 
     @GetMapping("/code/{memberCode}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
+    // @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
     public ResponseEntity<MemberDto> getMemberByCode(@PathVariable String memberCode) {
         log.info("Fetching member with code: {}", memberCode);
         MemberDto member = memberService.getMemberByCode(memberCode);
@@ -195,7 +195,7 @@ public class MemberController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    // @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
     public ResponseEntity<MemberDto> updateMember(
             @PathVariable Long id,
             @Valid @RequestBody MemberDto memberDto) {
@@ -205,7 +205,7 @@ public class MemberController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    // @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Void> deleteMember(@PathVariable Long id) {
         log.info("Deleting member with ID: {}", id);
         memberService.deleteMember(id);
@@ -213,7 +213,7 @@ public class MemberController {
     }
 
     @GetMapping("/expiring")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    // @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
     public ResponseEntity<List<MemberDto>> getExpiringMemberships(
             @RequestParam(defaultValue = "7") int daysBeforeExpiry) {
         log.info("Fetching members with expiring memberships in {} days", daysBeforeExpiry);
@@ -222,7 +222,7 @@ public class MemberController {
     }
 
     @GetMapping("/count/active")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    // @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Long> getActiveMembersCount() {
         log.info("Fetching active members count");
         long count = memberService.getActiveMembersCount();
