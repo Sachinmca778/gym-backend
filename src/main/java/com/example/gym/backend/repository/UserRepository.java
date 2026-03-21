@@ -2,6 +2,8 @@ package com.example.gym.backend.repository;
 
 import com.example.gym.backend.entity.User;
 import com.example.gym.backend.entity.User.UserRole;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,17 +21,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmail(String email);
 
     @Query("SELECT u FROM User u WHERE u.role = :role AND u.isActive = true")
-    List<User> findActiveUsersByRole(@Param("role") User.UserRole role);
+    Page<User> findActiveUsersByRole(@Param("role") User.UserRole role, Pageable pageable);
 
     @Query("SELECT u FROM User u WHERE u.isActive = true")
-    List<User> findAllActiveUsers();
+    Page<User> findAllActiveUsers(Pageable pageable);
 
     @Query("SELECT u FROM User u WHERE (LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) AND u.role = 'MEMBER'")
-    List<User> searchUsers(@Param("searchTerm") String searchTerm);
+    Page<User> searchUsers(@Param("searchTerm") String searchTerm, Pageable pageable);
 
     // Gym-based queries for dashboard
     @Query("SELECT u FROM User u WHERE u.gym.id = :gymId")
-    List<User> findByGymId(@Param("gymId") Long gymId);
+    Page<User> findByGymId(@Param("gymId") Long gymId, Pageable pageable);
 
     @Query("SELECT COUNT(u) FROM User u WHERE u.gym.id = :gymId")
     long countByGymId(@Param("gymId") Long gymId);
@@ -45,10 +47,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // Get all users (for admin to select when creating member)
     @Query("SELECT u FROM User u WHERE u.isActive = true")
-    List<User> findAllActive();
+    Page<User> findAllActive(Pageable pageable);
 
     // Get users by gym
     @Query("SELECT u FROM User u WHERE u.gym.id = :gymId AND u.isActive = true")
-    List<User> findActiveByGymId(@Param("gymId") Long gymId);
+    Page<User> findActiveByGymId(@Param("gymId") Long gymId, Pageable pageable);
 }
 

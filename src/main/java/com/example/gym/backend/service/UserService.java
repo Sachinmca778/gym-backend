@@ -10,13 +10,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class UserService {
 
     private final UserRepository userRepository;
@@ -25,16 +29,16 @@ public class UserService {
 
     public User createUser(RegisterUserDto dto) {
         log.info("Creating user: {}", dto.getUsername());
-        
+
         // Check if user already exists
         if (userRepository.existsByUsername(dto.getUsername())) {
             throw new RuntimeException("Username already exists");
         }
-        
+
         if (userRepository.existsByEmail(dto.getEmail())) {
             throw new RuntimeException("Email already exists");
         }
-        
+
         // Create new User entity from DTO
         User user = new User();
         user.setUsername(dto.getUsername());
@@ -43,30 +47,31 @@ public class UserService {
         user.setFirstName(dto.getFirstName());
         user.setLastName(dto.getLastName());
         user.setPhone(dto.getPhone());
-        
+
         // Set default role if not provided
         if (dto.getRole() == null) {
             user.setRole(User.UserRole.ADMIN);
         } else {
             user.setRole(dto.getRole());
         }
-        
+
         // Set active status
         user.setActive(true);
-        
+
         // Set gym if gymId is provided
         if (dto.getGym() != null) {
             Gym gym = gymRepository.findById(dto.getGym())
                     .orElseThrow(() -> new RuntimeException("Gym not found with id: " + dto.getGym()));
             user.setGym(gym);
         }
-        
+
         return userRepository.save(user);
     }
 
+    @Transactional(readOnly = true)
     public List<UserSearchDto> searchUsers(String searchTerm) {
         log.info("Searching users with term: {}", searchTerm);
-        List<User> users = userRepository.searchUsers(searchTerm);
+        Page<User> users = userRepository.searchUsers(searchTerm, Pageable.unpaged());
         return users.stream()
                 .map(this::convertToSearchDto)
                 .collect(Collectors.toList());
@@ -77,17 +82,18 @@ public class UserService {
      * ADMIN/MANAGER/RECEPTIONIST can see all users in their gym
      * SUPER_USER can see all users
      */
+    @Transactional(readOnly = true)
     public List<UserSearchDto> getAllUsers(User currentUser) {
         log.info("Getting all users for user: {}", currentUser.getUsername());
-        
+
         List<User> users;
-        
+
         // If SUPER_USER, get all users
         if (currentUser.getRole() == User.UserRole.SUPER_USER) {
-            users = userRepository.findAllActive();
+            users = userRepository.findAllActive(Pageable.unpaged()).getContent();
         } else if (currentUser.getGym() != null) {
             // Get users for the specific gym
-            users = userRepository.findActiveByGymId(currentUser.getGym().getId());
+            users = userRepository.findActiveByGymId(currentUser.getGym().getId(), Pageable.unpaged()).getContent();
         } else {
             users = List.of();
         }

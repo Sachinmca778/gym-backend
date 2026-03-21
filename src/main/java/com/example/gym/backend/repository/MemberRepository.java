@@ -28,8 +28,9 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     List<Member> findByStatus(MemberStatus status);
 
     @Query("SELECT m FROM Member m WHERE m.status = :status AND m.joinDate >= :startDate")
-    List<Member> findActiveMembersJoinedAfter(@Param("status") MemberStatus status,
-                                              @Param("startDate") LocalDate startDate);
+    Page<Member> findActiveMembersJoinedAfter(@Param("status") MemberStatus status,
+                                              @Param("startDate") LocalDate startDate,
+                                              Pageable pageable);
 
     @Query("SELECT m FROM Member m WHERE " +
             "LOWER(m.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
@@ -41,7 +42,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     @Query("SELECT COUNT(m) FROM Member m WHERE m.status = :status")
     long countByStatus(@Param("status") MemberStatus status);
 
-    @Query("SELECT DISTINCT m FROM Member m JOIN m.memberships mm WHERE mm.endDate <= :expiryDate AND m.status = 'ACTIVE'")
+    @Query("SELECT DISTINCT m FROM Member m JOIN FETCH m.memberships mm WHERE mm.endDate <= :expiryDate AND m.status = 'ACTIVE'")
     List<Member> findMembersWithExpiringMemberships(@Param("expiryDate") LocalDate expiryDate);
 
     /**

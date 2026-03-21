@@ -27,7 +27,6 @@ import java.util.Map;
 @RequestMapping("/gym/members")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 public class MemberController {
 
     private final MemberService memberService;
@@ -68,15 +67,15 @@ public class MemberController {
         if (currentUser != null && currentUser.getRole() == User.UserRole.SUPER_USER) {
             // SUPER_USER gets overall counts across all gyms
             totalUsers = userRepository.count();
-            activeUsers = userRepository.findAllActiveUsers().size();
+            activeUsers = userRepository.findAllActiveUsers(Pageable.unpaged()).getTotalElements();
             totalPayments = paymentService.getCurrentMonthTotalAmount();
             if (totalPayments == null) totalPayments = 0.0;
-            
+
             // Count users by role
             memberCount = userRepository.countActiveByRole(UserRole.MEMBER);
             trainerCount = userRepository.countActiveByRole(UserRole.TRAINER);
-            staffCount = userRepository.countActiveByRole(UserRole.ADMIN) 
-                        + userRepository.countActiveByRole(UserRole.MANAGER) 
+            staffCount = userRepository.countActiveByRole(UserRole.ADMIN)
+                        + userRepository.countActiveByRole(UserRole.MANAGER)
                         + userRepository.countActiveByRole(UserRole.RECEPTIONIST);
         } else {
             // ADMIN, MANAGER, RECEPTIONIST get gym-specific data
@@ -188,10 +187,10 @@ public class MemberController {
     @GetMapping("/search")
 //    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
     public ResponseEntity<Page<MemberDto>> searchMembers(
-            @ModelAttribute MemberSearchDto searchDto,
+            @RequestParam(required = false, defaultValue = "") String searchTerm,
             Pageable pageable) {
-        log.info("Searching members with criteria: {}", searchDto);
-        Page<MemberDto> members = memberService.searchMembers(searchDto, pageable);
+        log.info("Searching members with term: {}", searchTerm);
+        Page<MemberDto> members = memberService.searchMembers(searchTerm, pageable);
         return ResponseEntity.ok(members);
     }
 

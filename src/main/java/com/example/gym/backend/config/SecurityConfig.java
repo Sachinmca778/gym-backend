@@ -37,9 +37,16 @@ public class SecurityConfig {
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/gym/**").permitAll() //For Temporary Purpose
+                        // Public endpoints - no authentication required
                         .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/gym/auth/**").permitAll()
+                        .requestMatchers("/gym/gyms/active").permitAll()
+                        .requestMatchers("/gym/membership_plans/active").permitAll()
+                        // Swagger/OpenAPI - public documentation
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        // Health check endpoint
+                        .requestMatchers("/actuator/health").permitAll()
+                        // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

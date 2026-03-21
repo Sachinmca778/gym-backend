@@ -33,11 +33,33 @@ public class MemberService {
     private final UserRepository userRepository;
     private final GymRepository gymRepository;
 
+    @Transactional(readOnly = true)
     public List<MemberDto> getAllMembers() {
         List<Member> members = memberRepository.findAll();
         return members.stream()
                 .map(this::convertToDto)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public MemberDto getMemberById(Long id) {
+        Member member = memberRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found with id: " + id));
+        return convertToDto(member);
+    }
+
+    @Transactional(readOnly = true)
+    public MemberDto getMemberByCode(String code) {
+        Member member = memberRepository.findByMemberCode(code)
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found with code: " + code));
+        return convertToDto(member);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<MemberDto> searchMembers(String searchTerm, Pageable pageable) {
+        log.info("Searching members with term: {} and pageable: {}", searchTerm, pageable);
+        Page<Member> members = memberRepository.searchMembers(searchTerm, pageable);
+        return members.map(this::convertToDto);
     }
 
     /**
@@ -119,30 +141,10 @@ public class MemberService {
         return convertToDto(savedMember);
     }
 
-    public MemberDto getMemberById(Long id) {
-        log.info("Fetching member with ID: {}", id);
-        Member member = memberRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Member not found with ID: " + id));
-        return convertToDto(member);
-    }
-
-    public MemberDto getMemberByCode(String memberCode) {
-        log.info("Fetching member with code: {}", memberCode);
-        Member member = memberRepository.findByMemberCode(memberCode)
-                .orElseThrow(() -> new ResourceNotFoundException("Member not found with code: " + memberCode));
-        return convertToDto(member);
-    }
-
     public MemberDto getMemberByUserId(Long userId) {
         Member member = memberRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Member not found with user Id " + userId));
         return convertToDto(member);
-    }
-
-    public Page<MemberDto> searchMembers(MemberSearchDto searchDto, Pageable pageable) {
-        log.info("Searching members with criteria: {}", searchDto);
-        Page<Member> members = memberRepository.searchMembers(searchDto.getSearchTerm(), pageable);
-        return members.map(this::convertToDto);
     }
 
     public MemberDto updateMember(Long id, MemberDto memberDto) {

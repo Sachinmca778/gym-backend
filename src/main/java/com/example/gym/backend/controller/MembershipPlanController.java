@@ -18,7 +18,6 @@ import java.util.List;
 @RequestMapping("/gym/membership_plans")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 public class MembershipPlanController {
 
     private final MembershipPlanService planService;

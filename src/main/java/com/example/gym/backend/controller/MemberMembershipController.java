@@ -16,13 +16,12 @@ import java.util.List;
 @RequestMapping("/gym/memberships")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 public class MemberMembershipController {
 
     private final MemberMembershipService membershipService;
 
-    @PostMapping("/create")
-//    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    @PostMapping("/assign")
+    // @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
     public ResponseEntity<MemberMembershipDto> createMembership(@Valid @RequestBody MemberMembershipDto dto) {
         log.info("Creating new membership");
         MemberMembershipDto createdMembership = membershipService.createMembership(dto);
