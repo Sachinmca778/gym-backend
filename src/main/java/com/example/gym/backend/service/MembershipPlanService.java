@@ -11,6 +11,9 @@ import com.example.gym.backend.repository.MembershipPlanRepository;
 import com.example.gym.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -124,6 +127,18 @@ public class MembershipPlanService {
             plans = planRepository.findAll();
         }
         return plans.stream().map(this::convertToDto).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<MembershipPlanDto> getAllPlansPaginated(int page, int size) {
+        log.info("Fetching membership plans with pagination: page={}, size={}", page, size);
+        Pageable pageable = PageRequest.of(page, size);
+        Long gymId = getAuthenticatedUserGymId();
+        if (gymId != null) {
+            return planRepository.findAllByGymId(gymId, pageable).map(this::convertToDto);
+        } else {
+            return planRepository.findAll(pageable).map(this::convertToDto);
+        }
     }
 
     public List<MembershipPlanDto> getPlansByPriceRange(BigDecimal minPrice, BigDecimal maxPrice) {

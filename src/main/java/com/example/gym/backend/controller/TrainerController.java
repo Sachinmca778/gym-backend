@@ -6,13 +6,16 @@ import com.example.gym.backend.service.TrainerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/gym/trainers")
@@ -40,10 +43,21 @@ public class TrainerController {
 
     @GetMapping
 //    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
-    public ResponseEntity<List<TrainerDto>> getAllTrainers() {
-        log.info("Fetching all trainers");
-        List<TrainerDto> trainers = trainerService.getAllTrainers();
-        return ResponseEntity.ok(trainers);
+    public ResponseEntity<Map<String, Object>> getAllTrainers(
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size) {
+        log.info("Fetching all trainers with pagination: page={}, size={}", page, size);
+        
+        Page<TrainerDto> trainerPage = trainerService.getAllTrainersPaginated(page, size);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", trainerPage.getContent());
+        response.put("totalElements", trainerPage.getTotalElements());
+        response.put("totalPages", trainerPage.getTotalPages());
+        response.put("currentPage", page);
+        response.put("pageSize", size);
+        
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/active")

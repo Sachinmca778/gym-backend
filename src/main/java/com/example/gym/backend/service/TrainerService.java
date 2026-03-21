@@ -6,6 +6,9 @@ import com.example.gym.backend.exception.ResourceNotFoundException;
 import com.example.gym.backend.repository.TrainerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,6 +64,13 @@ public class TrainerService {
         log.info("Fetching all trainers");
         List<Trainer> trainers = trainerRepository.findAll();
         return trainers.stream().map(this::convertToDto).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<TrainerDto> getAllTrainersPaginated(int page, int size) {
+        log.info("Fetching trainers with pagination: page={}, size={}", page, size);
+        Pageable pageable = PageRequest.of(page, size);
+        return trainerRepository.findAll(pageable).map(this::convertToDto);
     }
 
     public List<TrainerDto> getTrainersBySpecialization(String specialization) {

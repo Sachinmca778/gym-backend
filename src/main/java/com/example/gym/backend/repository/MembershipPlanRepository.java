@@ -2,6 +2,8 @@ package com.example.gym.backend.repository;
 
 
 import com.example.gym.backend.entity.MembershipPlan;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,6 +24,9 @@ public interface MembershipPlanRepository extends JpaRepository<MembershipPlan, 
 
     @Query(value = "SELECT * FROM membership_plans WHERE gym_id = :gymId", nativeQuery = true)
     List<MembershipPlan> findAllByGymId(@Param("gymId") Long gymId);
+
+    @Query(value = "SELECT * FROM membership_plans WHERE gym_id = :gymId", nativeQuery = true)
+    Page<MembershipPlan> findAllByGymId(@Param("gymId") Long gymId, Pageable pageable);
 
     @Query("SELECT p FROM MembershipPlan p WHERE p.isActive = true AND p.price BETWEEN :minPrice AND :maxPrice")
     List<MembershipPlan> findActivePlansByPriceRange(@Param("minPrice") Double minPrice,
