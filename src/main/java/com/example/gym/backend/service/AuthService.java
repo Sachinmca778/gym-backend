@@ -26,7 +26,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
     private final MemberService memberService;
-    private final RedisTokenService redisTokenService;
+    // private final RedisTokenService redisTokenService;
 
     public AuthResponseDto login(AuthRequestDto request) {
         log.info("Authenticating user: {}", request.getUsername());
@@ -49,8 +49,8 @@ public class AuthService {
         String refreshToken = jwtUtil.generateRefreshToken(userDetails);
 
         // Store tokens in Redis for validation
-        redisTokenService.storeAccessToken(userDetails.getUsername(), accessToken);
-        redisTokenService.storeRefreshToken(userDetails.getUsername(), refreshToken);
+        // redisTokenService.storeAccessToken(userDetails.getUsername(), accessToken);
+        // redisTokenService.storeRefreshToken(userDetails.getUsername(), refreshToken);
 
 //        MemberDto member = memberService.getMemberByUserId(user.getId());
 //        Long memberId = member.getId();
@@ -61,7 +61,7 @@ public class AuthService {
         claims.put("name", fullName);
         claims.put("gymId",user.getGym() != null ? user.getGym().getId() : null);
 
-        redisTokenService.storeUserSession(userDetails.getUsername(), claims);
+        // redisTokenService.storeUserSession(userDetails.getUsername(), claims);
 
 
         return AuthResponseDto.builder()
@@ -83,9 +83,9 @@ public class AuthService {
             String username = jwtUtil.extractUsername(refreshToken);
             
             // Validate refresh token exists in Redis
-            if (!redisTokenService.validateRefreshToken(username, refreshToken)) {
-                throw new RuntimeException("Invalid refresh token");
-            }
+            // if (!redisTokenService.validateRefreshToken(username, refreshToken)) {
+            //     throw new RuntimeException("Invalid refresh token");
+            // }
             
             UserDetails userDetails = userRepository.findByUsername(username)
                     .orElseThrow(() -> new RuntimeException("User not found"));
@@ -93,7 +93,7 @@ public class AuthService {
             String newAccessToken = jwtUtil.generateToken(userDetails);
             
             // Update access token in Redis
-            redisTokenService.storeAccessToken(username, newAccessToken);
+            // redisTokenService.storeAccessToken(username, newAccessToken);
 
             return AuthResponseDto.builder()
                     .accessToken(newAccessToken)
@@ -114,9 +114,9 @@ public class AuthService {
             String username = jwtUtil.extractUsername(token);
             
             // Delete tokens from Redis (server-side logout)
-            redisTokenService.deleteTokens(username);
-            redisTokenService.deleteUserSession(username);
-            redisTokenService.deleteUserSession(username);
+            // redisTokenService.deleteTokens(username);
+            // redisTokenService.deleteUserSession(username);
+            // redisTokenService.deleteUserSession(username);
 
             log.info("User logged out successfully and tokens removed from Redis: {}", username);
         } else {
