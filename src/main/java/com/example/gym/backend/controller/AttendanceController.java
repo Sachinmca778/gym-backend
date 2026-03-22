@@ -1,17 +1,24 @@
 package com.example.gym.backend.controller;
 
 import com.example.gym.backend.dto.AttendanceDto;
-import com.example.gym.backend.dto.MemberDto;
+import com.example.gym.backend.entity.User;
+import com.example.gym.backend.repository.UserRepository;
 import com.example.gym.backend.service.AttendanceService;
-import com.example.gym.backend.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import com.example.gym.backend.repository.UserRepository;
-        import java.time.LocalDate;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,86 +27,149 @@ import java.util.Map;
 @RequestMapping("/api/gyms/{gymId}/attendance")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 public class AttendanceController {
 
     private final AttendanceService attendanceService;
     private final UserRepository userRepository;
 
+    /**
+     * Get current authenticated user
+     */
+    private User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof User) {
+            return (User) authentication.getPrincipal();
+        }
+        String username = authentication.getName();
+        return userRepository.findByUsername(username).orElse(null);
+    }
 
     @PostMapping("/check-in/{userId}")
-//    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
-    public AttendanceDto checkIn(
+    // @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    public ResponseEntity<AttendanceDto> checkIn(
             @PathVariable Long gymId,
             @PathVariable Long userId,
             @RequestBody AttendanceDto dto
     ) {
-        return attendanceService.checkIn(gymId, userId, dto);
+        log.info("Checking in user {} at gym {}", userId, gymId);
+        AttendanceDto result = attendanceService.checkIn(gymId, userId, dto);
+        return ResponseEntity.ok(result);
     }
 
     @PostMapping("/check-out/{userId}")
-    // @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
-    public AttendanceDto checkOut(
+    // @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    public ResponseEntity<AttendanceDto> checkOut(
             @PathVariable Long gymId,
             @PathVariable Long userId
     ) {
-        return attendanceService.checkOut(gymId, userId);
+        log.info("Checking out user {} from gym {}", userId, gymId);
+        AttendanceDto result = attendanceService.checkOut(gymId, userId);
+        return ResponseEntity.ok(result);
     }
 
-
-
     @GetMapping("/current/{userId}")
-    // @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
-    public AttendanceDto getCurrentAttendance(
+    // @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    public ResponseEntity<AttendanceDto> getCurrentAttendance(
             @PathVariable Long gymId,
             @PathVariable Long userId
     ) {
-        return attendanceService.getCurrentAttendance(gymId, userId);
+        AttendanceDto result = attendanceService.getCurrentAttendance(gymId, userId);
+        return result != null ? ResponseEntity.ok(result) : ResponseEntity.notFound().build();
     }
 
     @GetMapping("/today/{userId}")
-    // @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
-    public AttendanceDto getTodayCompletedAttendance(
+    // @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    public ResponseEntity<List<AttendanceDto>> getTodayAttendance(
             @PathVariable Long gymId,
             @PathVariable Long userId
     ) {
-        return attendanceService.getTodayCompletedAttendance(gymId, userId);
+        List<AttendanceDto> result = attendanceService.getTodayCompletedAttendance(gymId, userId);
+        return ResponseEntity.ok(result);
     }
 
-    // @GetMapping("/date")
-    // // @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
-    // public ResponseEntity<List<AttendanceDto>> getAttendanceByDate(
-    //         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-    //     log.info("Fetching all attendance for date: {}", date);
+    @GetMapping("/today/list")
+    // @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    public ResponseEntity<Page<AttendanceDto>> getTodayAttendanceList(
+            @PathVariable Long gymId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "checkIn"));
+        Page<AttendanceDto> result = attendanceService.getTodayAttendance(gymId, pageable);
+        return ResponseEntity.ok(result);
+    }
 
-    //     if (date == null) {
-    //         date = LocalDate.now();
-    //     }
-    //     List<AttendanceDto> attendances = attendanceService.getAttendanceByDate(date);
-    //     return ResponseEntity.ok(attendances);
-    // }
+    @GetMapping("/currently-present")
+    // @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    public ResponseEntity<List<AttendanceDto>> getCurrentlyPresent(
+            @PathVariable Long gymId
+    ) {
+        List<AttendanceDto> result = attendanceService.getCurrentlyPresent(gymId);
+        return ResponseEntity.ok(result);
+    }
 
-    // @GetMapping("/summary")
-    // // @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
-    // public ResponseEntity<Map<String, Object>> getAttendenceSummary(
-    //         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+    @GetMapping("/statistics")
+    // @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    public ResponseEntity<Map<String, Object>> getStatistics(
+            @PathVariable Long gymId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        if (date == null) {
+            date = LocalDate.now();
+        }
+        Map<String, Object> result = attendanceService.getAttendanceStatistics(gymId, date);
+        return ResponseEntity.ok(result);
+    }
 
-    //     if (date == null) {
-    //         date = LocalDate.now();
-    //     }
+    @GetMapping("/weekly")
+    // @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    public ResponseEntity<Map<String, Long>> getWeeklyAttendance(
+            @PathVariable Long gymId
+    ) {
+        Map<String, Long> result = attendanceService.getWeeklyAttendance(gymId);
+        return ResponseEntity.ok(result);
+    }
 
-    //     long dailyAttendanceCount = attendanceService.getDailyAttendanceCount(date);
-    //     Double dailyAverageDuration = attendanceService.getFindAvgDurationByDate(date);
+    @GetMapping("/date-range")
+    // @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    public ResponseEntity<Page<AttendanceDto>> getAttendanceByDateRange(
+            @PathVariable Long gymId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "checkIn"));
+        Page<AttendanceDto> result = attendanceService.getAttendanceByDateRange(
+                gymId, startDate, endDate, pageable);
+        return ResponseEntity.ok(result);
+    }
 
-    //     // long activeMembers = memberService.findAllActiveUsers();
-    //     long activeMembers = userRepository.findAllActiveUsers();
-    //     long dailyAbsentMember = activeMembers - dailyAttendanceCount;
+    @GetMapping("/date")
+    // @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
+    public ResponseEntity<List<AttendanceDto>> getAttendanceByDate(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        
+        LocalDate targetDate = (date != null) ? date : LocalDate.now();
+        LocalDateTime startOfDay = targetDate.atStartOfDay();
+        LocalDateTime endOfDay = targetDate.plusDays(1).atStartOfDay();
+        
+        // TODO: Implement in AttendanceService
+        List<AttendanceDto> attendances = List.of();
+        return ResponseEntity.ok(attendances);
+    }
 
-    //     Map<String, Object> response = new HashMap<>();
-    //     response.put("dailyAttendanceCount", dailyAttendanceCount);
-    //     response.put("activeMembers", activeMembers);
-    //     response.put("dailyAverageDuration", dailyAverageDuration);
-    //     response.put("dailyAbsentMember", dailyAbsentMember);
-    //     return ResponseEntity.ok(response);
-    // }
+    @GetMapping("/summary")
+    // @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    public ResponseEntity<Map<String, Object>> getAttendenceSummary(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+
+        if (date == null) {
+            date = LocalDate.now();
+        }
+        long activeMembers = userRepository.findAllActiveUsers(Pageable.unpaged()).getTotalElements();
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("activeMembers", activeMembers);
+        return ResponseEntity.ok(response);
+    }
 }

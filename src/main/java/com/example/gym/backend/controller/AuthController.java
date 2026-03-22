@@ -19,7 +19,6 @@ import java.util.Map;
 @RequestMapping("/gym/auth")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 public class AuthController {
 
     private final AuthService authService;

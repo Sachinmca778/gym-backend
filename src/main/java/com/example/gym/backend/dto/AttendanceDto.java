@@ -11,6 +11,8 @@ public class AttendanceDto {
 
     private Long id;
     private Long userId;
+    private String userName;
+    private String userEmail;
     private LocalDateTime checkIn;
     private LocalDateTime checkOut;
     private Integer durationMinutes;

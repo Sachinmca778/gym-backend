@@ -8,14 +8,21 @@ import com.example.gym.backend.repository.AttendanceRepository;
 import com.example.gym.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.gym.backend.entity.Attendance.CheckInMethod;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,9 +37,15 @@ public class AttendanceService {
     // ================= CHECK IN =================
     @Transactional
     public AttendanceDto checkIn(Long gymId, Long userId, AttendanceDto dto) {
+        log.info("Checking in user {} at gym {}", userId, gymId);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // Restriction 1: SUPER_USER cannot check in
+        if (user.getRole() == User.UserRole.SUPER_USER) {
+            throw new IllegalStateException("Super Users cannot mark attendance");
+        }
 
         if (!user.getGym().getId().equals(gymId)) {
             throw new IllegalStateException("User does not belong to this gym");
@@ -42,11 +55,20 @@ public class AttendanceService {
         LocalDateTime startOfDay = today.atStartOfDay();
         LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
 
+        // Restriction 2: Check if user already checked in today
         attendanceRepository
                 .findOpenAttendance(userId, startOfDay, endOfDay)
                 .ifPresent(a -> {
-                    throw new IllegalStateException("User already checked in today");
+                    throw new IllegalStateException("You have already checked in today");
                 });
+
+        // Also check for completed check-ins today (prevent multiple check-ins even after checkout)
+        List<Attendance> completedToday = attendanceRepository
+                .findCompletedAttendanceByUserAndDate(userId, startOfDay, endOfDay);
+        
+        if (!completedToday.isEmpty()) {
+            throw new IllegalStateException("You have already checked in and out today. Only one check-in allowed per day.");
+        }
 
         Attendance attendance = new Attendance();
         attendance.setUser(user);
@@ -62,6 +84,15 @@ public class AttendanceService {
     // ================= CHECK OUT =================
     @Transactional
     public AttendanceDto checkOut(Long gymId, Long userId) {
+        log.info("Checking out user {} from gym {}", userId, gymId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // Restriction: SUPER_USER cannot check out
+        if (user.getRole() == User.UserRole.SUPER_USER) {
+            throw new IllegalStateException("Super Users cannot mark attendance");
+        }
 
         LocalDate today = LocalDate.now();
         LocalDateTime startOfDay = today.atStartOfDay();
@@ -105,10 +136,8 @@ public class AttendanceService {
         return toDto(attendance);
     }
 
-    
-
     // ================= GET TODAY'S COMPLETED ATTENDANCE =================
-    public AttendanceDto getTodayCompletedAttendance(Long gymId, Long userId) {
+    public List<AttendanceDto> getTodayCompletedAttendance(Long gymId, Long userId) {
         LocalDate today = LocalDate.now();
         LocalDateTime startOfDay = today.atStartOfDay();
         LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
@@ -117,51 +146,109 @@ public class AttendanceService {
                 .findCompletedAttendanceByUserAndDate(userId, startOfDay, endOfDay);
 
         if (attendances.isEmpty()) {
-            return null;
+            return List.of();
         }
 
-        // Return the most recent completed attendance
-        Attendance attendance = attendances.get(0);
+        return attendances.stream()
+                .filter(a -> a.getGym().getId().equals(gymId))
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
 
-        if (!attendance.getGym().getId().equals(gymId)) {
-            throw new IllegalStateException("Gym mismatch");
+    // ================= GET TODAY'S ATTENDANCE LIST (ALL USERS) =================
+    public Page<AttendanceDto> getTodayAttendance(Long gymId, Pageable pageable) {
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
+
+        Page<Attendance> attendancePage = attendanceRepository.findAllByGymAndDate(
+                gymId, startOfDay, endOfDay, pageable);
+
+        return attendancePage.map(this::toDto);
+    }
+
+    // ================= GET CURRENTLY PRESENT MEMBERS =================
+    public List<AttendanceDto> getCurrentlyPresent(Long gymId) {
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
+
+        List<Attendance> presentMembers = attendanceRepository.findCurrentlyPresent(
+                gymId, startOfDay, endOfDay);
+
+        return presentMembers.stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    // ================= GET ATTENDANCE STATISTICS =================
+    public Map<String, Object> getAttendanceStatistics(Long gymId, LocalDate date) {
+        log.info("Fetching attendance statistics for gym {} on date {}", gymId, date);
+
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
+
+        long totalCheckIns = attendanceRepository.countTodayAttendance(gymId, startOfDay, endOfDay);
+        long currentlyPresent = attendanceRepository.countCurrentlyPresent(gymId, startOfDay, endOfDay);
+        Double avgDuration = attendanceRepository.getAverageDuration(gymId, startOfDay, endOfDay);
+
+        // Get peak hours
+        List<Object[]> peakHoursData = attendanceRepository.getPeakHours(gymId, startOfDay, endOfDay);
+        Map<Integer, Long> peakHours = new HashMap<>();
+        for (Object[] row : peakHoursData) {
+            peakHours.put((Integer) row[0], (Long) row[1]);
         }
 
-        return toDto(attendance);
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalCheckIns", totalCheckIns);
+        stats.put("currentlyPresent", currentlyPresent);
+        stats.put("averageDuration", avgDuration != null ? avgDuration.intValue() : 0);
+        stats.put("peakHours", peakHours);
+
+        return stats;
+    }
+
+    // ================= GET WEEKLY ATTENDANCE =================
+    public Map<String, Long> getWeeklyAttendance(Long gymId) {
+        LocalDate today = LocalDate.now();
+        LocalDate weekStart = today.minusDays(6);
+        Map<String, Long> weeklyData = new HashMap<>();
+
+        for (int i = 0; i < 7; i++) {
+            LocalDate date = weekStart.plusDays(i);
+            LocalDateTime startOfDay = date.atStartOfDay();
+            LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
+            
+            long count = attendanceRepository.countTodayAttendance(gymId, startOfDay, endOfDay);
+            String dayName = date.getDayOfWeek().toString().substring(0, 3); // e.g., "MON"
+            weeklyData.put(dayName, count);
+        }
+
+        return weeklyData;
+    }
+
+    // ================= GET ATTENDANCE BY DATE RANGE =================
+    public Page<AttendanceDto> getAttendanceByDateRange(Long gymId, LocalDate startDate, 
+                                                        LocalDate endDate, Pageable pageable) {
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.plusDays(1).atStartOfDay();
+
+        Page<Attendance> attendancePage = attendanceRepository.findByDateRange(
+                gymId, startDateTime, endDateTime, pageable);
+
+        return attendancePage.map(this::toDto);
     }
 
     private AttendanceDto toDto(Attendance a) {
         AttendanceDto dto = new AttendanceDto();
         dto.setId(a.getId());
         dto.setUserId(a.getUser().getId());
+        dto.setUserName(a.getUser().getFirstName() + " " + a.getUser().getLastName());
+        dto.setUserEmail(a.getUser().getEmail());
         dto.setCheckIn(a.getCheckIn());
         dto.setCheckOut(a.getCheckOut());
         dto.setDurationMinutes(a.getDurationMinutes());
         dto.setMethod(a.getMethod().name());
         return dto;
     }
-
-    //  public List<AttendanceDto> getMemberAttendance(Long memberId, LocalDate date) {
-    //     log.info("Fetching attendance for member ID: {} on date: {}", memberId, date);
-    //     List<Attendance> attendances = attendanceRepository.findByMemberIdAndDate(memberId, date);
-    //     return attendances.stream().map(this::convertToDto).collect(Collectors.toList());
-    // }
-
-    // public List<AttendanceDto> getAttendanceByDate(LocalDate date) {
-    //     log.info("Fetching all attendance for date: {}", date);
-    //     List<Attendance> attendances = attendanceRepository.findByDate(date);
-    //     return attendances.stream().map(this::convertToDto).collect(Collectors.toList());
-    // }
-
-    // public long getDailyAttendanceCount(LocalDate date) {
-    //     return attendanceRepository.countByDate(date);
-    // }
-
-    // public long getMemberAttendanceCount(Long memberId, LocalDate date) {
-    //     return attendanceRepository.countByMemberIdAndDate(memberId, date);
-    // }
-
-    // public Double getFindAvgDurationByDate(LocalDate date) {
-    //     return attendanceRepository.findAvgDurationByDate(date);
-    // }
 }

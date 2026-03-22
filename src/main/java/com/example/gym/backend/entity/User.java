@@ -17,7 +17,13 @@ import java.util.List;
 import com.example.gym.backend.entity.Payment;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users", indexes = {
+    @Index(name = "idx_user_email", columnList = "email"),
+    @Index(name = "idx_user_username", columnList = "username"),
+    @Index(name = "idx_user_role", columnList = "role"),
+    @Index(name = "idx_user_gym", columnList = "gym_id"),
+    @Index(name = "idx_user_active", columnList = "isActive")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -5,18 +5,20 @@ import com.example.gym.backend.service.GymService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/gym/gyms")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 public class GymController {
 
     private final GymService gymService;
@@ -47,10 +49,21 @@ public class GymController {
 
     @GetMapping("/all")
 //    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TRAINER', 'RECEPTIONIST')")
-    public ResponseEntity<List<GymDto>> getAllGyms() {
-        log.info("Fetching all gyms");
-        List<GymDto> gyms = gymService.getAllGyms();
-        return ResponseEntity.ok(gyms);
+    public ResponseEntity<Map<String, Object>> getAllGyms(
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size) {
+        log.info("Fetching all gyms with pagination: page={}, size={}", page, size);
+        
+        Page<GymDto> gymPage = gymService.getAllGymsPaginated(page, size);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", gymPage.getContent());
+        response.put("totalElements", gymPage.getTotalElements());
+        response.put("totalPages", gymPage.getTotalPages());
+        response.put("currentPage", page);
+        response.put("pageSize", size);
+        
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}")
