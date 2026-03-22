@@ -63,63 +63,57 @@ public class MemberService {
     }
 
     /**
-     * Create member - either from user data (admin selecting user) or from form data
+     * Create member - MUST be linked to an existing User
+     * User MUST belong to the same gym
      * 
-     * @param memberDto MemberDto containing either userId (to fetch from User table) or form data
-     * @param currentUser The admin/manager creating the member
+     * @param memberDto MemberDto containing userId (REQUIRED)
+     * @param currentUser The admin/manager/receptionist creating the member
      * @return Created MemberDto
      */
     public MemberDto createMember(MemberDto memberDto, User currentUser) {
         log.info("Creating new member with userId: {}", memberDto.getUserId());
+
+        // Validation 1: userId is REQUIRED - No direct member creation
+        if (memberDto.getUserId() == null) {
+            throw new IllegalStateException("User ID is required. Member must be linked to an existing user.");
+        }
+
+        // Validation 2: User must exist
+        User user = userRepository.findById(memberDto.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + memberDto.getUserId()));
+
+        // Validation 3: User must belong to a gym
+        if (user.getGym() == null) {
+            throw new IllegalStateException("User does not belong to any gym");
+        }
+
+        // Validation 4: User's gym must match current user's gym (unless SUPER_USER)
+        if (currentUser.getRole() != User.UserRole.SUPER_USER) {
+            if (currentUser.getGym() == null || !currentUser.getGym().getId().equals(user.getGym().getId())) {
+                throw new IllegalStateException("User must belong to your gym");
+            }
+        }
+
+        // Validation 5: Check if user already has a member profile
+        if (memberRepository.findByUserId(user.getId()).isPresent()) {
+            throw new IllegalStateException("User already has a member profile");
+        }
 
         // Generate unique member code
         String memberCode = memberCodeGenerator.generateUniqueCode();
 
         Member member = new Member();
         member.setMemberCode(memberCode);
-        
-        // Determine gym - from memberDto or from current user's gym
-        Gym gym = null;
-        if (memberDto.getGymId() != null) {
-            gym = gymRepository.findById(memberDto.getGymId())
-                    .orElse(null);
-        } else if (currentUser.getGym() != null) {
-            gym = currentUser.getGym();
-        }
-        member.setGym(gym);
+        member.setGym(user.getGym());
 
-        // If userId is provided, fetch data from User table
-        if (memberDto.getUserId() != null) {
-            User user = userRepository.findById(memberDto.getUserId())
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + memberDto.getUserId()));
-            
-            // Check if user already has a member profile
-            if (memberRepository.findByUserId(user.getId()).isPresent()) {
-                throw new RuntimeException("User already has a member profile");
-            }
-            
-            // Populate member data from User table
-            member.setUserId(user.getId());
-            member.setFirstName(user.getFirstName());
-            member.setLastName(user.getLastName());
-            member.setEmail(user.getEmail());
-            member.setPhone(user.getPhone());
-            
-            // Use gym from user if available
-            if (user.getGym() != null) {
-                member.setGym(user.getGym());
-            }
-            
-            log.info("Creating member from user data: {} {}", user.getFirstName(), user.getLastName());
-        } else {
-            // Use form data directly
-            member.setFirstName(memberDto.getFirstName());
-            member.setLastName(memberDto.getLastName());
-            member.setEmail(memberDto.getEmail());
-            member.setPhone(memberDto.getPhone());
-        }
+        // Populate member data from User table
+        member.setUserId(user.getId());
+        member.setFirstName(user.getFirstName());
+        member.setLastName(user.getLastName());
+        member.setEmail(user.getEmail());
+        member.setPhone(user.getPhone());
 
-        // Set other fields from form data (can be edited after selecting user)
+        // Set additional member details from DTO
         member.setDateOfBirth(memberDto.getDateOfBirth());
         member.setGender(memberDto.getGender());
         member.setAddress(memberDto.getAddress());
@@ -132,11 +126,14 @@ public class MemberService {
         member.setMedicalConditions(memberDto.getMedicalConditions());
         member.setAllergies(memberDto.getAllergies());
         member.setFitnessGoals(memberDto.getFitnessGoals());
-        member.setJoinDate(LocalDate.now());
-        member.setStatus(Member.MemberStatus.ACTIVE);
+        member.setProfileImage(memberDto.getProfileImage());
+        
+        // Set status
+        member.setStatus(memberDto.getStatus() != null ? memberDto.getStatus() : Member.MemberStatus.ACTIVE);
+        member.setJoinDate(memberDto.getJoinDate() != null ? memberDto.getJoinDate() : LocalDate.now());
 
         Member savedMember = memberRepository.save(member);
-        log.info("Member created successfully with ID: {}", savedMember.getId());
+        log.info("Member created successfully with ID: {} and code: {}", savedMember.getId(), savedMember.getMemberCode());
 
         return convertToDto(savedMember);
     }
