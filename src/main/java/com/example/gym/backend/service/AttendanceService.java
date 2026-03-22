@@ -42,6 +42,11 @@ public class AttendanceService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
+        // Restriction 1: SUPER_USER cannot check in
+        if (user.getRole() == User.UserRole.SUPER_USER) {
+            throw new IllegalStateException("Super Users cannot mark attendance");
+        }
+
         if (!user.getGym().getId().equals(gymId)) {
             throw new IllegalStateException("User does not belong to this gym");
         }
@@ -50,11 +55,20 @@ public class AttendanceService {
         LocalDateTime startOfDay = today.atStartOfDay();
         LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
 
+        // Restriction 2: Check if user already checked in today
         attendanceRepository
                 .findOpenAttendance(userId, startOfDay, endOfDay)
                 .ifPresent(a -> {
-                    throw new IllegalStateException("User already checked in today");
+                    throw new IllegalStateException("You have already checked in today");
                 });
+
+        // Also check for completed check-ins today (prevent multiple check-ins even after checkout)
+        List<Attendance> completedToday = attendanceRepository
+                .findCompletedAttendanceByUserAndDate(userId, startOfDay, endOfDay);
+        
+        if (!completedToday.isEmpty()) {
+            throw new IllegalStateException("You have already checked in and out today. Only one check-in allowed per day.");
+        }
 
         Attendance attendance = new Attendance();
         attendance.setUser(user);
@@ -71,6 +85,14 @@ public class AttendanceService {
     @Transactional
     public AttendanceDto checkOut(Long gymId, Long userId) {
         log.info("Checking out user {} from gym {}", userId, gymId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // Restriction: SUPER_USER cannot check out
+        if (user.getRole() == User.UserRole.SUPER_USER) {
+            throw new IllegalStateException("Super Users cannot mark attendance");
+        }
 
         LocalDate today = LocalDate.now();
         LocalDateTime startOfDay = today.atStartOfDay();
