@@ -130,7 +130,7 @@ public class AttendanceController {
     }
 
     @GetMapping("/date-range")
-    // @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST')")
+    // @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'RECEPTIONIST', 'TRAINER', 'MEMBER')")
     public ResponseEntity<Page<AttendanceDto>> getAttendanceByDateRange(
             @PathVariable Long gymId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -138,9 +138,11 @@ public class AttendanceController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
+        log.info("Fetching attendance for gym {} from {} to {}", gymId, startDate, endDate);
+        
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "checkIn"));
-        Page<AttendanceDto> result = attendanceService.getAttendanceByDateRange(
-                gymId, startDate, endDate, pageable);
+        Page<AttendanceDto> result = attendanceService.getAttendanceByDateRange(gymId, startDate, endDate, pageable);
+        
         return ResponseEntity.ok(result);
     }
 

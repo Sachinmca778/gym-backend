@@ -8,6 +8,8 @@ import com.example.gym.backend.repository.GymRepository;
 import com.example.gym.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -71,6 +73,22 @@ public class UserService {
     @Transactional(readOnly = true)
     public List<UserSearchDto> searchUsers(String searchTerm) {
         log.info("Searching users with term: {}", searchTerm);
+        
+        // Get current user to check role
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof User) {
+            User currentUser = (User) auth.getPrincipal();
+            
+            // SUPER_USER sees ALL users from ALL gyms
+            if (currentUser.getRole() == User.UserRole.SUPER_USER) {
+                Page<User> users = userRepository.findAll(Pageable.unpaged());
+                return users.stream()
+                    .map(this::convertToSearchDto)
+                    .collect(Collectors.toList());
+            }
+        }
+        
+        // For others, search with pagination
         Page<User> users = userRepository.searchUsers(searchTerm, Pageable.unpaged());
         return users.stream()
                 .map(this::convertToSearchDto)
